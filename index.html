@@ -98,8 +98,8 @@ small{color:#6b7280}
   </div>
 
   <div class="row">
-    <button class="btn btn-primary" onclick="useCustomOrFull()">Use</button>
-    <button class="btn btn-dark" onclick="generateRandom()">Random Email</button>
+    <button class="btn btn-primary" onclick="useCustomOrFull()">Use Custom</button>
+    <button class="btn btn-dark" onclick="generateRandom()">TA New Email</button>
   </div>
 
   <div class="row" style="margin-top:8px">
@@ -116,13 +116,13 @@ small{color:#6b7280}
 
 <!-- INBOX -->
 <div class="card center">
-  <h3>📥 Inbox</h3>
+  <h3>📥TA Mail Inbox</h3>
   <div id="inbox" class="muted">No mail yet</div>
 </div>
 
 <!-- MAIL VIEW -->
 <div class="card">
-  <h3 class="center">📨 Mail</h3>
+  <h3 class="center">📨 Mail Code Details</h3>
   <div id="mail" class="muted center">Select a mail</div>
 </div>
 
@@ -194,7 +194,7 @@ function randUser(len=7){
 
 // ===== domains =====
 async function getDomains(){
-  const r=await fetch(BASE+"/api/random-domains/?limit=50");
+  const r=await fetch(BASE+"/api/random-domains/?limit=500");
   const d=await r.json();
   const list = d.data?.domains||d.domains||d.data||d||[];
   return Array.from(new Set(list));
@@ -203,7 +203,7 @@ async function getDomains(){
 async function loadDomainsToSelect(){
   try{
     const domainsAll = await getDomains();
-    const domains = domainsAll.slice(0, 50);
+    const domains = domainsAll.slice(0, 500);
     const sel=document.getElementById("domainSelect");
     sel.innerHTML="";
 
@@ -220,7 +220,7 @@ async function loadDomainsToSelect(){
     });
 
     document.getElementById("domainStatus").innerText=
-      `✅ ${domains.length} domains loaded` + (domainsAll.length < 50 ? " (API কম দিয়েছে)" : "");
+      `✅ ${domains.length} domains loaded` + (domainsAll.length < 500 ? " (API কম দিয়েছে)" : "");
   }catch(e){
     document.getElementById("domainStatus").innerText="❌ Domain load failed";
     document.getElementById("domainSelect").innerHTML = `<option value="">Domain load failed</option>`;
