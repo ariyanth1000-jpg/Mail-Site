@@ -5,124 +5,138 @@
 <title>Trending Academy Mail</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{
-  font-family:Arial, sans-serif;
-  background:#f2f4f8;
-  margin:0;
-  padding:16px;
-}
-.wrap{
-  max-width:720px;
-  margin:auto;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-.card{
-  background:#fff;
-  padding:16px;
-  border-radius:16px;
-  box-shadow:0 10px 25px rgba(0,0,0,.08);
-}
-.center{text-align:center}
-h2{margin:6px 0 12px}
-.input{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #ddd;
-  font-size:15px;
-  box-sizing:border-box;
-  outline:none;
-}
-.input:focus{ border-color:#93c5fd; box-shadow:0 0 0 4px rgba(147,197,253,.35); }
-.btn{
-  width:100%;
-  padding:14px;
-  border:0;
-  border-radius:14px;
-  font-size:15px;
-  font-weight:800;
-  cursor:pointer;
-}
-.btn-primary{background:#2563eb;color:#fff}
-.btn-dark{background:#111827;color:#fff}
-.btn-light{background:#eef2ff;color:#1e40af}
-.row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.row button{flex:1}
-.pill{
-  margin-top:10px;
-  padding:10px;
-  background:#f3f4f6;
-  border-radius:12px;
-  font-weight:800;
-  word-break:break-all;
-}
-.muted{color:#6b7280;font-size:13px;margin-top:6px}
-.mail{
-  border:1px solid #eee;
-  padding:10px;
-  border-radius:12px;
-  margin-top:8px;
-  cursor:pointer;
-  text-align:left;
-}
-.mail:hover{background:#fafafa}
-pre{white-space:pre-wrap;margin:0}
-small{color:#6b7280}
-.hidden{display:none !important;}
+  body{
+    font-family: Arial, sans-serif;
+    background:#f2f4f8;
+    margin:0;
+    padding:16px;
+  }
+  .wrap{
+    max-width:720px;
+    margin:auto;
+    display:flex;
+    flex-direction:column;
+    gap:16px; /* overall spacing between cards */
+  }
+  .card{
+    background:#fff;
+    padding:16px;
+    border-radius:16px;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+  }
+  .center{text-align:center}
+  h2{margin:6px 0 14px}
+  h3{margin:0 0 10px}
+  .input{
+    width:100%;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid #ddd;
+    font-size:15px;
+    box-sizing:border-box;
+    outline:none;
+  }
+  .input:focus{
+    border-color:#93c5fd;
+    box-shadow:0 0 0 4px rgba(147,197,253,.35);
+  }
+  .stack{
+    display:flex;
+    flex-direction:column;
+    gap:12px; /* spacing between top boxes */
+    margin-bottom:14px;
+  }
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  .row button{flex:1}
+  .btn{
+    width:100%;
+    padding:14px;
+    border:0;
+    border-radius:14px;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .btn-primary{background:#2563eb;color:#fff}
+  .btn-dark{background:#111827;color:#fff}
+  .btn-light{background:#eef2ff;color:#1e40af}
+  .pill{
+    margin-top:12px;
+    padding:10px;
+    background:#f3f4f6;
+    border-radius:12px;
+    font-weight:800;
+    word-break:break-all;
+  }
+  .muted{color:#6b7280;font-size:13px;margin-top:8px}
+  .mail{
+    border:1px solid #eee;
+    padding:10px;
+    border-radius:12px;
+    margin-top:10px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .mail:hover{background:#fafafa}
+  pre{white-space:pre-wrap;margin:0}
+  small{color:#6b7280}
+  .hidden{display:none !important;}
 </style>
 </head>
 <body>
 
 <div class="wrap">
 
-<!-- TOP -->
-<div class="card center">
-  <h2>📧 Temp Mail</h2>
+  <!-- TOP -->
+  <div class="card center">
+    <h2>🔥 Trending Academy Mail</h2>
 
-  <!-- ONE BOX: name OR full email -->
-  <input id="nameOrEmail" class="input"
-         placeholder="নাম লিখুন বা full email দিন (যেমন: Tamim অথবা tamim@domain.com)" />
+    <!-- Top input boxes with spacing -->
+    <div class="stack">
+      <!-- Custom box (name OR full email) -->
+      <input id="nameOrEmail" class="input"
+        placeholder="নাম লিখুন বা full email দিন (যেমন: ariyan অথবা ariyan@domain.com)" />
 
-  <!-- domain area (auto hide/show) -->
-  <div id="domainArea">
-    <select id="domainSelect" class="input"></select>
-    <div class="muted" id="domainStatus">Loading domains...</div>
+      <!-- Domain box (always visible, but will hide only when full email is typed) -->
+      <div id="domainArea">
+        <select id="domainSelect" class="input"></select>
+        <div class="muted" id="domainStatus">Loading domains...</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-primary" onclick="useCustomOrFull()">Use</button>
+      <button class="btn btn-dark" onclick="generateRandom()">Random Email</button>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-light" onclick="copyEmail()">📋 Copy</button>
+      <button class="btn btn-light" onclick="loadInbox()">🔄 Refresh</button>
+    </div>
+
+    <div class="pill">
+      <span id="email">---</span>
+    </div>
+
+    <div class="muted" id="status">উপরে নাম/ইমেইল দিয়ে Use চাপুন</div>
   </div>
 
-  <div class="row">
-    <button class="btn btn-primary" onclick="useCustomOrFull()">Use Custom</button>
-    <button class="btn btn-dark" onclick="generateRandom()">Random Email</button>
+  <!-- INBOX -->
+  <div class="card center">
+    <h3>📥 Inbox</h3>
+    <div id="inbox" class="muted">No mail yet</div>
   </div>
 
-  <div class="row" style="margin-top:8px">
-    <button class="btn btn-light" onclick="copyEmail()">📋 Copy</button>
-    <button class="btn btn-light" onclick="loadInbox()">🔄 Refresh</button>
+  <!-- MAIL VIEW -->
+  <div class="card">
+    <h3 class="center">📨 Mail</h3>
+    <div id="mail" class="muted center">Select a mail</div>
   </div>
-
-  <div class="pill">
-    <span id="email">---</span>
-  </div>
-
-  <div class="muted" id="status">উপরে নাম/ইমেইল দিয়ে Use চাপুন</div>
-</div>
-
-<!-- INBOX -->
-<div class="card center">
-  <h3>📥 Inbox</h3>
-  <div id="inbox" class="muted">No mail yet</div>
-</div>
-
-<!-- MAIL VIEW -->
-<div class="card">
-  <h3 class="center">📨 Mail</h3>
-  <div id="mail" class="muted center">Select a mail</div>
-</div>
 
 </div>
 
@@ -144,7 +158,6 @@ function escapeHtml(s){
 }
 
 function safeUser(u){
-  // allow a-z 0-9 . _ -
   u = (u||"").toLowerCase().trim();
   u = u.replace(/[^a-z0-9._-]/g,"");
   return u.slice(0,30);
@@ -154,28 +167,6 @@ function normalizeInput(raw){
   raw = String(raw||"").trim().toLowerCase();
   raw = raw.replace(/\s+/g,"");
   return raw;
-}
-
-function parseInputToEmail(raw){
-  raw = normalizeInput(raw);
-
-  // full email (contains @)
-  if(raw.includes("@")){
-    const parts = raw.split("@");
-    if(parts.length !== 2) return null;
-    const user = safeUser(parts[0]);
-    const domain = parts[1];
-    if(!user) return null;
-    if(!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) return null;
-    return { user, domain, full: `${user}@${domain}` };
-  }
-
-  // only name -> domain from dropdown
-  const user = safeUser(raw);
-  if(!user) return null;
-  const domain = document.getElementById("domainSelect").value;
-  if(!domain) return null;
-  return { user, domain, full: `${user}@${domain}` };
 }
 
 function startAutoRefresh(){
@@ -191,19 +182,17 @@ function randUser(len=7){
 }
 
 // ===== domains =====
-// এখানে আগে limit=20 ছিল — তাই ২০টা দেখাচ্ছিল। এখন বড় করে দিলাম, তারপর ২১টা সিলেক্ট করব।
 async function getDomains(){
   const r=await fetch(BASE+"/api/random-domains/?limit=50");
   const d=await r.json();
   const list = d.data?.domains||d.domains||d.data||d||[];
-  // unique রাখি
   return Array.from(new Set(list));
 }
 
 async function loadDomainsToSelect(){
   try{
     const domainsAll = await getDomains();
-    const domains = domainsAll.slice(0, 21); // আপনার চাওয়া ২১টা
+    const domains = domainsAll.slice(0, 21); // user wants 21
     const sel=document.getElementById("domainSelect");
     sel.innerHTML="";
 
@@ -219,7 +208,6 @@ async function loadDomainsToSelect(){
       sel.appendChild(o);
     });
 
-    // যদি API ২১টার কম দেয়, সেটা এখানে দেখাবে
     document.getElementById("domainStatus").innerText=
       `✅ ${domains.length} domains loaded` + (domainsAll.length < 21 ? " (API কম দিয়েছে)" : "");
   }catch(e){
@@ -228,17 +216,40 @@ async function loadDomainsToSelect(){
   }
 }
 
-// ===== auto hide/show domain dropdown =====
+// ===== hide domain only when full email typed =====
 function updateDomainVisibility(){
   const raw = normalizeInput(document.getElementById("nameOrEmail").value);
   const domainArea = document.getElementById("domainArea");
 
-  // @ থাকলে full email ধরা হবে -> domain dropdown hide
+  // Only hide when full email is typed in the top custom box
   if(raw.includes("@")){
     domainArea.classList.add("hidden");
   }else{
     domainArea.classList.remove("hidden");
   }
+}
+
+// ===== parse input (name OR full email) =====
+function parseInputToEmail(raw){
+  raw = normalizeInput(raw);
+
+  // full email
+  if(raw.includes("@")){
+    const parts = raw.split("@");
+    if(parts.length !== 2) return null;
+    const user = safeUser(parts[0]);
+    const domain = parts[1];
+    if(!user) return null;
+    if(!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) return null;
+    return { user, domain, full: `${user}@${domain}` };
+  }
+
+  // only name -> need selected domain
+  const user = safeUser(raw);
+  if(!user) return null;
+  const domain = document.getElementById("domainSelect").value;
+  if(!domain) return null;
+  return { user, domain, full: `${user}@${domain}` };
 }
 
 // ===== actions =====
@@ -247,13 +258,14 @@ async function useCustomOrFull(){
   const parsed = parseInputToEmail(raw);
 
   if(!parsed){
-    setStatus("❌ নাম লিখুন বা সঠিক full email দিন (নাম দিলে domain select করতে হবে)");
+    setStatus("❌ নাম লিখুন বা সঠিক full email দিন (নাম দিলে domain select করুন)");
     return;
   }
 
   cur = { user: parsed.user, domain: parsed.domain };
   document.getElementById("email").innerText = parsed.full;
 
+  // keep the input as user typed (do not force overwrite)
   localStorage.setItem("last_mailbox", parsed.full);
 
   setStatus("✅ Email ready. Inbox auto refresh হচ্ছে...");
@@ -264,6 +276,11 @@ async function useCustomOrFull(){
 async function generateRandom(){
   try{
     setStatus("Generating random email...");
+
+    // IMPORTANT: Random click করলে উপরের বক্সে কোনো মেইল লেখা দেখাবে না
+    document.getElementById("nameOrEmail").value = "";
+    updateDomainVisibility(); // ensure domain stays visible
+
     const domainsAll = await getDomains();
     const domain = domainsAll[Math.random()*domainsAll.length|0];
     const user = randUser();
@@ -271,9 +288,6 @@ async function generateRandom(){
     cur = { user, domain };
     const full = `${user}@${domain}`;
     document.getElementById("email").innerText = full;
-    document.getElementById("nameOrEmail").value = full;
-
-    updateDomainVisibility(); // random দিলে @ আছে -> hide
 
     localStorage.setItem("last_mailbox", full);
 
@@ -308,7 +322,7 @@ async function loadInbox(silent=false){
       </div>
     `).join("");
 
-    if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
+    if(!silent) setStatus(\`✅ Inbox loaded (\${mails.length})\`);
   }catch(e){
     document.getElementById("inbox").innerText="Inbox load failed";
     if(!silent) setStatus("❌ Inbox load failed");
@@ -345,18 +359,8 @@ function copyEmail(){
 (function restore(){
   const saved = localStorage.getItem("last_mailbox");
   if(saved){
-    document.getElementById("nameOrEmail").value = saved;
-    updateDomainVisibility();
-  }
-})();
-
-// ===== init =====
-(async function init(){
-  await loadDomainsToSelect();
-
-  // restore saved mailbox inbox (if any)
-  const saved = localStorage.getItem("last_mailbox");
-  if(saved){
+    // do not put it in the input (user asked random should not show there)
+    // but keep current mailbox so inbox can work after reload
     const raw = normalizeInput(saved);
     if(raw.includes("@")){
       const parts = raw.split("@");
@@ -375,10 +379,16 @@ function copyEmail(){
   }
 })();
 
-// auto hide/show while typing
+// init
+(async function init(){
+  await loadDomainsToSelect();
+  updateDomainVisibility();
+})();
+
+// while typing: hide domain only when full email typed
 document.getElementById("nameOrEmail").addEventListener("input", updateDomainVisibility);
 
-// mobile: back to tab
+// mobile: back to tab -> refresh inbox
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden && cur.user) loadInbox(true);
 });
@@ -386,3 +396,4 @@ document.addEventListener("visibilitychange",()=>{
 
 </body>
 </html>
+```0
