@@ -103,8 +103,8 @@ small{color:#6b7280}
   </div>
 
   <div class="row" style="margin-top:8px">
-    <button class="btn btn-light" onclick="copyEmail()">📋 Copy</button>
-    <button class="btn btn-light" onclick="loadInbox()">🔄 Refresh</button>
+    <button class="btn btn-green" onclick="copyEmail()">📋 Copy</button>
+    <button class="btn btn-yellow" onclick="loadInbox()">🔄 Refresh</button>
   </div>
 
   <div class="pill">
@@ -194,7 +194,7 @@ function randUser(len=7){
 
 // ===== domains =====
 async function getDomains(){
-  const r=await fetch(BASE+"/api/random-domains/?limit=50");
+  const r=await fetch(BASE+"/api/random-domains/?limit=150");
   const d=await r.json();
   const list = d.data?.domains||d.domains||d.data||d||[];
   return Array.from(new Set(list));
@@ -203,7 +203,7 @@ async function getDomains(){
 async function loadDomainsToSelect(){
   try{
     const domainsAll = await getDomains();
-    const domains = domainsAll.slice(0, 21);
+    const domains = domainsAll.slice(0, 100);
     const sel=document.getElementById("domainSelect");
     sel.innerHTML="";
 
