@@ -48,7 +48,11 @@ h2{margin:6px 0 14px}
 }
 .btn-primary{background:#2563eb;color:#fff}
 .btn-dark{background:#111827;color:#fff}
-.btn-light{background:#eef2ff;color:#1e40af}
+
+/* ✅ Copy সবুজ, Refresh হলুদ */
+.btn-green{background:#16a34a;color:#fff}
+.btn-yellow{background:#facc15;color:#111827}
+
 .row{
   display:flex;
   gap:12px;
@@ -65,18 +69,137 @@ h2{margin:6px 0 14px}
   word-break:break-all;
 }
 .muted{color:#6b7280;font-size:13px;margin-top:10px}
-.mail{
-  border:1px solid #eee;
-  padding:10px;
-  border-radius:12px;
-  margin-top:10px;
-  cursor:pointer;
-  text-align:left;
-}
-.mail:hover{background:#fafafa}
 pre{white-space:pre-wrap;margin:0}
 small{color:#6b7280}
 .hidden{display:none !important;}
+
+/* =========================
+   ✅ Tinyhost-like INBOX TABLE
+   ========================= */
+.tableWrap{
+  margin-top:10px;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid #e5e7eb;
+}
+.inboxTable{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+}
+.inboxTable thead th{
+  background:#334155; /* header dark */
+  color:#fff;
+  font-size:12px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  padding:12px 10px;
+  text-align:left;
+  border-right:1px solid rgba(255,255,255,.15);
+}
+.inboxTable thead th:last-child{border-right:0}
+.inboxTable tbody td{
+  padding:12px 10px;
+  border-top:1px solid #eef2f7;
+  vertical-align:top;
+  color:#111827;
+  font-size:14px;
+}
+.inboxTable tbody tr:nth-child(even){ background:#f8fafc; }
+.senderCol{width:22%}
+.subjectCol{width:38%}
+.dateCol{width:22%}
+.actionCol{width:18%}
+.ellipsis{
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.actionBtns{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:stretch;
+}
+.btnMini{
+  border:0;
+  border-radius:10px;
+  padding:10px 10px;
+  font-weight:900;
+  cursor:pointer;
+  font-size:13px;
+}
+.btnView{ background:#3b82f6; color:#fff; }
+.btnDelete{ background:#ef4444; color:#fff; }
+.btnMini:active{ transform:scale(.99); }
+
+@media (max-width:560px){
+  .inboxTable thead{display:none;}
+  .inboxTable, .inboxTable tbody, .inboxTable tr, .inboxTable td{display:block; width:100%;}
+  .inboxTable tr{border-top:1px solid #eef2f7; padding:10px;}
+  .inboxTable tbody td{border:0; padding:6px 0;}
+  .inboxTable tbody td::before{
+    content:attr(data-label);
+    display:block;
+    font-weight:900;
+    color:#6b7280;
+    font-size:12px;
+    margin-bottom:2px;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .actionBtns{flex-direction:row;}
+}
+
+/* =========================
+   ✅ Tinyhost-like MAIL DETAIL
+   ========================= */
+.detailTitle{
+  font-size:22px;
+  font-weight:900;
+  text-align:left;
+  margin:0 0 10px;
+  color:#374151;
+}
+.hrBlue{
+  height:3px;
+  background:#2563eb;
+  border-radius:999px;
+  margin:8px 0 14px;
+  opacity:.75;
+}
+.detailGrid{
+  display:grid;
+  grid-template-columns: 110px 1fr;
+  gap:10px 12px;
+  align-items:start;
+}
+.label{
+  font-weight:900;
+  color:#374151;
+}
+.value{
+  color:#111827;
+  word-break:break-word;
+}
+.bodyBox{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+  margin-top:10px;
+}
+.bodyFrame{
+  width:100%;
+  height:520px;
+  border:0;
+  display:block;
+  background:#fff;
+}
+.bodyText{
+  padding:12px;
+}
 </style>
 </head>
 <body>
@@ -87,11 +210,8 @@ small{color:#6b7280}
 <div class="card center">
   <h2>📧 Trending Academy Mail</h2>
 
-  <!-- ONE BOX: name OR full email -->
-  <input id="nameOrEmail" class="input"
-         placeholder="tamim or tamim@domain.com" />
+  <input id="nameOrEmail" class="input" placeholder="tamim or tamim@domain.com" />
 
-  <!-- domain area (auto hide/show) -->
   <div id="domainArea">
     <select id="domainSelect" class="input"></select>
     <div class="muted" id="domainStatus">Loading domains...</div>
@@ -115,9 +235,9 @@ small{color:#6b7280}
 </div>
 
 <!-- INBOX -->
-<div class="card center">
-  <h3>📥TA Mail Inbox</h3>
-  <div id="inbox" class="muted">No mail yet</div>
+<div class="card">
+  <h3 class="center">📥TA Mail Inbox</h3>
+  <div id="inbox" class="muted" style="margin-top:10px">No mail yet</div>
 </div>
 
 <!-- MAIL VIEW -->
@@ -133,7 +253,6 @@ const BASE="https://tinyhost.shop";
 let cur={user:null,domain:null};
 let inboxTimer=null;
 
-// ===== utils =====
 function setStatus(t){ document.getElementById("status").innerText=t; }
 
 function escapeHtml(s){
@@ -146,7 +265,6 @@ function escapeHtml(s){
 }
 
 function safeUser(u){
-  // allow a-z 0-9 . _ -
   u = (u||"").toLowerCase().trim();
   u = u.replace(/[^a-z0-9._-]/g,"");
   return u.slice(0,30);
@@ -161,7 +279,6 @@ function normalizeInput(raw){
 function parseInputToEmail(raw){
   raw = normalizeInput(raw);
 
-  // full email (contains @)
   if(raw.includes("@")){
     const parts = raw.split("@");
     if(parts.length !== 2) return null;
@@ -172,7 +289,6 @@ function parseInputToEmail(raw){
     return { user, domain, full: `${user}@${domain}` };
   }
 
-  // only name -> domain from dropdown
   const user = safeUser(raw);
   if(!user) return null;
   const domain = document.getElementById("domainSelect").value;
@@ -227,12 +343,9 @@ async function loadDomainsToSelect(){
   }
 }
 
-// ===== auto hide/show domain dropdown =====
 function updateDomainVisibility(){
   const raw = normalizeInput(document.getElementById("nameOrEmail").value);
   const domainArea = document.getElementById("domainArea");
-
-  // শুধু তখনই hide হবে যখন সত্যি সত্যি full email লেখা আছে
   if(raw && raw.includes("@")){
     domainArea.classList.add("hidden");
   }else{
@@ -271,7 +384,6 @@ async function generateRandom(){
     const full = `${user}@${domain}`;
     document.getElementById("email").innerText = full;
 
-    // Random Email ক্লিক করলে উপরের বক্স ফাঁকা থাকবে
     document.getElementById("nameOrEmail").value = "";
     updateDomainVisibility();
 
@@ -283,6 +395,48 @@ async function generateRandom(){
   }catch(e){
     setStatus("❌ Random generate failed");
   }
+}
+
+/* ✅ Tinyhost-like inbox renderer */
+function renderInboxTable(mails){
+  const rows = mails.map(m=>{
+    const id = (m.id||m.email_id||m._id||"");
+    const sender = m.from || m.sender || m.mail_from || "unknown";
+    const subject = m.subject || "No subject";
+    const date = m.date || m.created_at || m.time || "";
+
+    return `
+      <tr>
+        <td class="senderCol" data-label="Sender">${escapeHtml(sender)}</td>
+        <td class="subjectCol" data-label="Subject"><div class="ellipsis">${escapeHtml(subject)}</div></td>
+        <td class="dateCol" data-label="Date">${escapeHtml(date)}</td>
+        <td class="actionCol" data-label="Actions">
+          <div class="actionBtns">
+            <button class="btnMini btnView" onclick="openMail('${escapeHtml(id)}')">View</button>
+            <button class="btnMini btnDelete" onclick="deleteMail('${escapeHtml(id)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div class="tableWrap">
+      <table class="inboxTable">
+        <thead>
+          <tr>
+            <th>SENDER</th>
+            <th>SUBJECT</th>
+            <th>DATE</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 async function loadInbox(silent=false){
@@ -301,13 +455,7 @@ async function loadInbox(silent=false){
       return;
     }
 
-    box.innerHTML=mails.map(m=>`
-      <div class="mail" onclick="openMail('${m.id||m.email_id||m._id}')">
-        <div style="font-weight:900">${escapeHtml(m.subject||"No subject")}</div>
-        <div class="muted">${escapeHtml(m.from||m.sender||"unknown")}</div>
-      </div>
-    `).join("");
-
+    box.innerHTML = renderInboxTable(mails);
     if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
   }catch(e){
     document.getElementById("inbox").innerText="Inbox load failed";
@@ -315,20 +463,98 @@ async function loadInbox(silent=false){
   }
 }
 
+/* ✅ Delete (endpoint may vary) */
+async function deleteMail(id){
+  if(!id) return;
+  const ok = confirm("Delete this email?");
+  if(!ok) return;
+
+  try{
+    setStatus("Deleting...");
+    // ⚠️ NOTE: Tinyhost-এর delete endpoint আলাদা হতে পারে।
+    // যদি কাজ না করে, আপনি tinyhost-এর “Network/Fetch” থেকে Delete URL দিন—আমি ঠিক করে দেব।
+    //
+    // সম্ভাব্য endpoint (আপনাকে confirm করতে হবে):
+    // const url = `${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`;
+    // অথবা: `${BASE}/api/email/${domain}/${user}/${id}/delete`
+    //
+    const url = `${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`;
+    const res = await fetch(url, { method: "DELETE" });
+
+    if(!res.ok){
+      setStatus("❌ Delete failed (endpoint mismatch)");
+      alert("Delete কাজ করেনি। সম্ভবত Delete API URL আলাদা।");
+      return;
+    }
+    setStatus("✅ Deleted");
+    loadInbox(true);
+  }catch(e){
+    setStatus("❌ Delete failed");
+  }
+}
+
+/* ✅ Tinyhost-like Mail Detail + HTML body render */
 async function openMail(id){
   document.getElementById("mail").innerHTML = `<div class="muted center">Loading...</div>`;
   try{
     const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`);
     const d=await r.json();
     const m=d.data?.email||d.email||d;
-    const body = m.body || m.text || m.html || "(empty)";
 
-    document.getElementById("mail").innerHTML=`
-      <div style="font-weight:900;font-size:16px;margin-bottom:6px">${escapeHtml(m.subject||"")}</div>
-      <small><b>From:</b> ${escapeHtml(m.from||m.sender||"")}</small>
-      <hr>
-      <pre>${escapeHtml(body)}</pre>
+    const sender = m.sender || m.from || m.mail_from || "";
+    const subject = m.subject || "";
+    const date = m.date || m.created_at || m.time || "";
+
+    const textBody = m.body || m.text || "";
+    const htmlBody = m.html_body || m.html || "";
+
+    document.getElementById("mail").innerHTML = `
+      <div class="detailTitle">Email Detail</div>
+      <div class="hrBlue"></div>
+
+      <div class="detailGrid">
+        <div class="label">Sender:</div>
+        <div class="value">${escapeHtml(sender || "—")}</div>
+
+        <div class="label">Subject:</div>
+        <div class="value">${escapeHtml(subject || "—")}</div>
+
+        <div class="label">Date:</div>
+        <div class="value">${escapeHtml(date || "—")}</div>
+
+        <div class="label">Body:</div>
+        <div class="value"></div>
+      </div>
+
+      <div class="bodyBox" id="bodyBox">
+        <div class="bodyText muted">(loading...)</div>
+      </div>
     `;
+
+    const bodyBox = document.getElementById("bodyBox");
+
+    if(htmlBody && String(htmlBody).trim()){
+      bodyBox.innerHTML = `
+        <iframe id="mailFrame" class="bodyFrame" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      `;
+      const frame = document.getElementById("mailFrame");
+
+      const wrapped = `<!doctype html><html><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <base target="_blank">
+        <style>body{font-family:Arial,sans-serif;margin:0;padding:12px} img{max-width:100%;height:auto}</style>
+      </head><body>${htmlBody}</body></html>`;
+
+      frame.srcdoc = wrapped;
+      return;
+    }
+
+    if(textBody && String(textBody).trim()){
+      bodyBox.innerHTML = `<div class="bodyText"><pre>${escapeHtml(textBody)}</pre></div>`;
+      return;
+    }
+
+    bodyBox.innerHTML = `<div class="bodyText muted">(empty)</div>`;
   }catch(e){
     document.getElementById("mail").innerHTML = `<div class="muted center">Mail open failed</div>`;
   }
@@ -341,18 +567,11 @@ function copyEmail(){
   setStatus("✅ Copied!");
 }
 
-/* ===========================
-   ✅ UPDATED: restore behavior
-   - page open হলে custom box ফাঁকা থাকবে
-   - domain visible থাকবে
-   - কিন্তু last mailbox থাকলে নিচের email + inbox কাজ করবে
-   =========================== */
+/* restore */
 (function restore(){
-  // ✅ input always empty at start
   document.getElementById("nameOrEmail").value = "";
-  updateDomainVisibility(); // ✅ ensures domain is visible
+  updateDomainVisibility();
 
-  // ✅ keep last mailbox only for inbox continuity (not shown in input)
   const saved = localStorage.getItem("last_mailbox");
   if(saved){
     const raw = normalizeInput(saved);
@@ -373,16 +592,13 @@ function copyEmail(){
   }
 })();
 
-// ===== init =====
 (async function init(){
   await loadDomainsToSelect();
-  updateDomainVisibility(); // ✅ make sure domain stays visible on load
+  updateDomainVisibility();
 })();
 
-// auto hide/show while typing
 document.getElementById("nameOrEmail").addEventListener("input", updateDomainVisibility);
 
-// mobile: back to tab
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden && cur.user) loadInbox(true);
 });
