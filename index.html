@@ -194,7 +194,7 @@ function randUser(len=7){
 
 // ===== domains =====
 async function getDomains(){
-  const r=await fetch(BASE+"/api/random-domains/?limit=150");
+  const r=await fetch(BASE+"/api/random-domains/?limit=50");
   const d=await r.json();
   const list = d.data?.domains||d.domains||d.data||d||[];
   return Array.from(new Set(list));
@@ -203,7 +203,7 @@ async function getDomains(){
 async function loadDomainsToSelect(){
   try{
     const domainsAll = await getDomains();
-    const domains = domainsAll.slice(0, 100);
+    const domains = domainsAll.slice(0, 50);
     const sel=document.getElementById("domainSelect");
     sel.innerHTML="";
 
@@ -220,7 +220,7 @@ async function loadDomainsToSelect(){
     });
 
     document.getElementById("domainStatus").innerText=
-      `✅ ${domains.length} domains loaded` + (domainsAll.length < 21 ? " (API কম দিয়েছে)" : "");
+      `✅ ${domains.length} domains loaded` + (domainsAll.length < 50 ? " (API কম দিয়েছে)" : "");
   }catch(e){
     document.getElementById("domainStatus").innerText="❌ Domain load failed";
     document.getElementById("domainSelect").innerHTML = `<option value="">Domain load failed</option>`;
