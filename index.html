@@ -194,7 +194,7 @@ function randUser(len=7){
 
 // ===== domains =====
 async function getDomains(){
-  const r=await fetch(BASE+"/api/random-domains/?limit=200");
+  const r=await fetch(BASE+"/api/random-domains/?limit=150");
   const d=await r.json();
   const list = d.data?.domains||d.domains||d.data||d||[];
   return Array.from(new Set(list));
