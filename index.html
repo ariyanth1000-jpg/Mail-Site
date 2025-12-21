@@ -5,83 +5,271 @@
 <title>Temp Mail</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:12px}
-.box{background:#fff;padding:12px;border-radius:10px;margin-bottom:10px}
-button{padding:8px 12px;border:0;border-radius:8px;background:#007bff;color:#fff}
-button.gray{background:#555}
-.mail{border-bottom:1px solid #eee;padding:8px 0;cursor:pointer}
-small{color:#555}
-pre{white-space:pre-wrap}
+  body{
+    font-family: Arial, sans-serif;
+    background: linear-gradient(180deg,#f7f9ff,#f2f2f2);
+    margin:0;
+    padding:16px;
+  }
+  .wrap{
+    max-width: 720px;
+    margin: 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .card{
+    background:#fff;
+    border-radius:16px;
+    padding:16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.08);
+  }
+  .center{
+    text-align:center;
+  }
+  h2{
+    margin:6px 0 12px;
+    font-size:22px;
+  }
+  .btn{
+    width:100%;
+    padding:14px 14px;
+    border:0;
+    border-radius:14px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .btn:active{ transform: scale(.99); }
+  .btn-primary{
+    background: #2563eb;
+    color:#fff;
+    box-shadow: 0 10px 18px rgba(37,99,235,.25);
+  }
+  .btn-secondary{
+    background:#111827;
+    color:#fff;
+  }
+  .btn-ghost{
+    background:#eef2ff;
+    color:#1e40af;
+    border:1px solid #dbeafe;
+    font-weight:700;
+  }
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+  }
+  .row > *{ flex: 1 1 140px; }
+  .input{
+    width:100%;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid #e5e7eb;
+    font-size:15px;
+    outline:none;
+  }
+  .input:focus{ border-color:#93c5fd; box-shadow:0 0 0 4px rgba(147,197,253,.35); }
+  .pill{
+    display:inline-block;
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:12px;
+    background:#f3f4f6;
+    font-weight:700;
+    word-break:break-all;
+  }
+  .muted{ color:#6b7280; font-size:13px; margin-top:8px; }
+  .mail{
+    border:1px solid #eef2f7;
+    padding:10px 12px;
+    border-radius:12px;
+    margin:10px 0;
+    cursor:pointer;
+  }
+  .mail:hover{ background:#fafafa; }
+  pre{ white-space:pre-wrap; margin:0; }
 </style>
 </head>
 <body>
 
-<div class="box">
-<h3>📧 Temp Mail</h3>
-<button onclick="generateEmail()">Generate Email</button>
-<button class="gray" onclick="copyEmail()">Copy</button>
-<p><b>Email:</b> <span id="email">---</span></p>
-</div>
+<div class="wrap">
 
-<div class="box">
-<button onclick="loadInbox()">Refresh Inbox</button>
-<div id="inbox">No mail yet</div>
-</div>
+  <div class="card center">
+    <h2>📧 My Temp Mail</h2>
 
-<div class="box" id="mail">Select a mail</div>
+    <!-- Custom username box -->
+    <input id="customUser" class="input" placeholder="Custom name লিখুন (যেমন: ariyan)" />
+
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-primary" onclick="generateEmail(false)">Generate Random Email</button>
+      <button class="btn btn-secondary" onclick="generateEmail(true)">Use Custom Name</button>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-ghost" onclick="copyEmail()">📋 Copy Email</button>
+      <button class="btn btn-ghost" onclick="loadInbox()">🔄 Refresh Inbox</button>
+    </div>
+
+    <div class="pill">
+      <span id="email">---</span>
+    </div>
+
+    <div class="muted" id="status">Generate দিয়ে শুরু করুন</div>
+  </div>
+
+  <div class="card center">
+    <h3 style="margin:0 0 10px">📥 Inbox</h3>
+    <div id="inbox" class="muted">No mail yet</div>
+  </div>
+
+  <div class="card">
+    <h3 class="center" style="margin:0 0 10px">📨 Mail View</h3>
+    <div id="mail" class="muted center">Select a mail</div>
+  </div>
+
+</div>
 
 <script>
 const BASE="https://tinyhost.shop";
 let cur={user:null,domain:null};
+let inboxTimer=null;
 
-function rand(){
- let c="abcdefghijklmnopqrstuvwxyz0123456789",s="";
- for(let i=0;i<7;i++) s+=c[Math.random()*c.length|0];
- return s;
+function randUser(len=7){
+  const c="abcdefghijklmnopqrstuvwxyz0123456789";
+  let s="";
+  for(let i=0;i<len;i++) s+=c[Math.random()*c.length|0];
+  return s;
 }
 
-async function generateEmail(){
- const r=await fetch(BASE+"/api/random-domains/?limit=10");
- const d=await r.json();
- const domains=d.data?.domains||d.domains||d.data||d;
- cur.domain=domains[Math.random()*domains.length|0];
- cur.user=rand();
- document.getElementById("email").innerText=`${cur.user}@${cur.domain}`;
- loadInbox();
+function setStatus(t){
+  document.getElementById("status").innerText = t;
 }
 
-async function loadInbox(){
- if(!cur.user) return;
- const r=await fetch(`${BASE}/api/email/${cur.domain}/${cur.user}/?page=1&limit=20`);
- const d=await r.json();
- const mails=d.data?.emails||d.emails||d.data||[];
- let html="";
- if(!mails.length) html="No mail yet";
- mails.forEach(m=>{
-  html+=`<div class="mail" onclick="openMail('${m.id||m.email_id||m._id}')">
-  <b>${m.subject||"No subject"}</b><br>
-  <small>${m.from||"unknown"}</small></div>`;
- });
- document.getElementById("inbox").innerHTML=html;
+function safeUser(u){
+  // allow a-z 0-9 . _ -
+  u = (u||"").toLowerCase().trim();
+  u = u.replace(/[^a-z0-9._-]/g,"");
+  return u.slice(0,30);
+}
+
+async function getDomains(){
+  const r=await fetch(BASE+"/api/random-domains/?limit=10");
+  const d=await r.json();
+  return d.data?.domains||d.domains||d.data||d||[];
+}
+
+function startAutoRefresh(){
+  if(inboxTimer) clearInterval(inboxTimer);
+  inboxTimer = setInterval(()=>loadInbox(true), 5000);
+}
+
+async function generateEmail(useCustom){
+  try{
+    setStatus("Loading domains...");
+    const domains = await getDomains();
+    const domain = domains[Math.random()*domains.length|0];
+
+    let user;
+    if(useCustom){
+      user = safeUser(document.getElementById("customUser").value);
+      if(!user){
+        setStatus("Custom name লিখুন (a-z / 0-9) তারপর Use Custom Name দিন");
+        return;
+      }
+    }else{
+      user = randUser();
+    }
+
+    cur = { user, domain };
+    document.getElementById("email").innerText = `${user}@${domain}`;
+    setStatus("✅ Email ready. Inbox auto refresh হচ্ছে...");
+    await loadInbox();
+    startAutoRefresh();
+
+  }catch(e){
+    setStatus("❌ Domain load failed. নেট/সার্ভিস সমস্যা হতে পারে।");
+  }
+}
+
+async function loadInbox(silent=false){
+  if(!cur.user) {
+    if(!silent) setStatus("আগে Generate Email দিন");
+    return;
+  }
+  if(!silent) setStatus("Checking inbox...");
+  try{
+    const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/?page=1&limit=20`);
+    const d=await r.json();
+    const mails=d.data?.emails||d.emails||d.data||[];
+
+    const box=document.getElementById("inbox");
+    if(!mails.length){
+      box.innerHTML = `<div class="muted">No mail yet. Auto refreshing...</div>`;
+      if(!silent) setStatus("No mail yet. Auto refreshing...");
+      return;
+    }
+
+    box.innerHTML = mails.map(m=>`
+      <div class="mail" onclick="openMail('${(m.id||m.email_id||m._id)}')">
+        <div style="font-weight:800">${escapeHtml(m.subject||"No subject")}</div>
+        <div class="muted">${escapeHtml(m.from||m.sender||"unknown")}</div>
+      </div>
+    `).join("");
+
+    if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
+  }catch(e){
+    document.getElementById("inbox").innerHTML = `<div class="muted">Inbox load failed. আবার চেষ্টা করুন।</div>`;
+    if(!silent) setStatus("❌ Inbox load failed");
+  }
 }
 
 async function openMail(id){
- const r=await fetch(`${BASE}/api/email/${cur.domain}/${cur.user}/${id}`);
- const d=await r.json();
- const m=d.data?.email||d.email||d;
- document.getElementById("mail").innerHTML=
- `<h4>${m.subject||""}</h4>
- <small>${m.from||""}</small><hr>
- <pre>${m.body||m.text||""}</pre>`;
+  const mailBox = document.getElementById("mail");
+  mailBox.className = "";
+  mailBox.innerHTML = `<div class="muted center">Loading mail...</div>`;
+  try{
+    const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`);
+    const d=await r.json();
+    const m=d.data?.email||d.email||d;
+
+    const body = m.body || m.text || m.html || "(empty)";
+    mailBox.innerHTML = `
+      <div style="font-weight:900;font-size:16px;margin-bottom:6px">${escapeHtml(m.subject||"")}</div>
+      <div class="muted" style="margin-bottom:10px"><b>From:</b> ${escapeHtml(m.from||m.sender||"")}</div>
+      <div class="card" style="box-shadow:none;border:1px solid #eef2f7">
+        <pre>${escapeHtml(body)}</pre>
+      </div>
+    `;
+  }catch(e){
+    mailBox.innerHTML = `<div class="muted center">Mail open failed</div>`;
+  }
 }
 
 function copyEmail(){
- const e=document.getElementById("email").innerText;
- navigator.clipboard.writeText(e);
- alert("Copied!");
+  const e=document.getElementById("email").innerText;
+  if(!e || e==="---") { setStatus("আগে Generate Email দিন"); return; }
+  navigator.clipboard.writeText(e);
+  setStatus("✅ Copied!");
 }
 
-setInterval(loadInbox,5000);
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+// mobile এ background থেকে ফিরে এলে আবার refresh শুরু
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && cur.user) loadInbox(true);
+});
 </script>
 
 </body>
