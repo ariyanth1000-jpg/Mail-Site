@@ -2,252 +2,306 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Trending Academy Mail</title>
+<title>Temp Mail</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{
-  font-family:Arial, sans-serif;
-  background:#f2f4f8;
-  margin:0;
-  padding:16px;
-}
-.wrap{
-  max-width:720px;
-  margin:auto;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-.card{
-  background:#fff;
-  padding:16px;
-  border-radius:16px;
-  box-shadow:0 10px 25px rgba(0,0,0,.08);
-}
-.center{text-align:center}
-h2{margin:6px 0 12px}
-.input{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #ddd;
-  font-size:15px;
-  margin-bottom:8px;
-}
-.btn{
-  width:100%;
-  padding:14px;
-  border:0;
-  border-radius:14px;
-  font-size:15px;
-  font-weight:700;
-  cursor:pointer;
-}
-.btn-primary{background:#2563eb;color:#fff}
-.btn-dark{background:#111827;color:#fff}
-.btn-light{background:#eef2ff;color:#1e40af}
-.row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.row button{flex:1}
-.pill{
-  margin-top:10px;
-  padding:10px;
-  background:#f3f4f6;
-  border-radius:12px;
-  font-weight:700;
-  word-break:break-all;
-}
-.muted{color:#6b7280;font-size:13px;margin-top:6px}
-.mail{
-  border:1px solid #eee;
-  padding:10px;
-  border-radius:12px;
-  margin-top:8px;
-  cursor:pointer;
-}
-.mail:hover{background:#fafafa}
-pre{white-space:pre-wrap}
+  body{
+    font-family: Arial, sans-serif;
+    background: linear-gradient(180deg,#f7f9ff,#f2f2f2);
+    margin:0;
+    padding:16px;
+  }
+  .wrap{
+    max-width: 720px;
+    margin: 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .card{
+    background:#fff;
+    border-radius:16px;
+    padding:16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.08);
+  }
+  .center{ text-align:center; }
+  h2{ margin:6px 0 12px; font-size:22px; }
+  .input{
+    width:100%;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid #e5e7eb;
+    font-size:15px;
+    outline:none;
+    box-sizing:border-box;
+  }
+  .input:focus{ border-color:#93c5fd; box-shadow:0 0 0 4px rgba(147,197,253,.35); }
+
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+    margin-top:10px;
+  }
+  .row > *{ flex: 1 1 160px; }
+
+  .btn{
+    width:100%;
+    padding:14px 14px;
+    border:0;
+    border-radius:14px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .btn:active{ transform: scale(.99); }
+  .btn-primary{
+    background: #2563eb;
+    color:#fff;
+    box-shadow: 0 10px 18px rgba(37,99,235,.25);
+  }
+  .btn-ghost{
+    background:#eef2ff;
+    color:#1e40af;
+    border:1px solid #dbeafe;
+    font-weight:800;
+  }
+  .pill{
+    display:inline-block;
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:12px;
+    background:#f3f4f6;
+    font-weight:800;
+    word-break:break-all;
+  }
+  .muted{ color:#6b7280; font-size:13px; margin-top:8px; }
+
+  .mail{
+    border:1px solid #eef2f7;
+    padding:10px 12px;
+    border-radius:12px;
+    margin:10px 0;
+    cursor:pointer;
+    text-align:left;
+  }
+  .mail:hover{ background:#fafafa; }
+  pre{ white-space:pre-wrap; margin:0; }
 </style>
 </head>
 <body>
 
 <div class="wrap">
 
-<!-- TOP -->
-<div class="card center">
-<h2>📧 Temp Mail</h2>
+  <div class="card center">
+    <h2>📧 Temp Mail Inbox</h2>
 
-<input id="customUser" class="input" placeholder="Custom name (যেমন: ariyan)" />
+    <!-- FULL EMAIL BOX -->
+    <input id="fullEmail" class="input" placeholder="Full email দিন (যেমন: ariyan@domain.com)" />
 
-<select id="domainSelect" class="input"></select>
-<div class="muted" id="domainStatus">Loading domains...</div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="useFullEmail()">Use Email</button>
+      <button class="btn btn-ghost" onclick="copyEmail()">📋 Copy</button>
+    </div>
 
-<div class="row">
-<button class="btn btn-primary" onclick="generateEmail(true)">Use Custom Name</button>
-<button class="btn btn-dark" onclick="generateEmail(false)">Random Email</button>
-</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-ghost" onclick="loadInbox()">🔄 Refresh Inbox</button>
+      <button class="btn btn-ghost" onclick="forgetEmail()">🗑️ Clear</button>
+    </div>
 
-<div class="row" style="margin-top:8px">
-<button class="btn btn-light" onclick="copyEmail()">📋 Copy</button>
-<button class="btn btn-light" onclick="loadInbox()">🔄 Refresh</button>
-</div>
+    <div class="pill">
+      <span id="email">---</span>
+    </div>
 
-<div class="pill">
-<span id="email">---</span>
-</div>
+    <div class="muted" id="status">Full email লিখে “Use Email” চাপুন</div>
+  </div>
 
-<div class="muted" id="status">Generate দিয়ে শুরু করুন</div>
-</div>
+  <div class="card center">
+    <h3 style="margin:0 0 10px">📥 Inbox</h3>
+    <div id="inbox" class="muted">No mail yet</div>
+  </div>
 
-<!-- INBOX -->
-<div class="card center">
-<h3>📥 Inbox</h3>
-<div id="inbox" class="muted">No mail yet</div>
-</div>
-
-<!-- MAIL VIEW -->
-<div class="card">
-<h3 class="center">📨 Mail</h3>
-<div id="mail" class="muted center">Select a mail</div>
-</div>
+  <div class="card">
+    <h3 class="center" style="margin:0 0 10px">📨 Mail View</h3>
+    <div id="mail" class="muted center">Select a mail</div>
+  </div>
 
 </div>
 
 <script>
-const BASE="https://tinyhost.shop";
-let cur={user:null,domain:null};
-let inboxTimer=null;
+const BASE = "https://tinyhost.shop";
+let cur = { user:null, domain:null };
+let inboxTimer = null;
 
-// utils
-function randUser(){
-  const c="abcdefghijklmnopqrstuvwxyz0123456789";
-  let s="";
-  for(let i=0;i<7;i++) s+=c[Math.random()*c.length|0];
-  return s;
-}
-function safeUser(u){
-  return (u||"").toLowerCase().replace(/[^a-z0-9._-]/g,"").slice(0,30);
-}
 function setStatus(t){
-  document.getElementById("status").innerText=t;
+  document.getElementById("status").innerText = t;
 }
 
-// load domains
-async function getDomains(){
-  const r=await fetch(BASE+"/api/random-domains/?limit=20");
-  const d=await r.json();
-  return d.data?.domains||d.domains||d.data||d||[];
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
 
-async function loadDomainsToSelect(){
-  try{
-    const domains=await getDomains();
-    const sel=document.getElementById("domainSelect");
-    sel.innerHTML="";
-    domains.forEach(d=>{
-      const o=document.createElement("option");
-      o.value=d; o.textContent=d;
-      sel.appendChild(o);
-    });
-    document.getElementById("domainStatus").innerText=`✅ ${domains.length} domains loaded`;
-  }catch(e){
-    document.getElementById("domainStatus").innerText="❌ Domain load failed";
-  }
+function safeUser(u){
+  // allow a-z 0-9 . _ -
+  u = (u || "").toLowerCase().trim();
+  u = u.replace(/[^a-z0-9._-]/g,"");
+  return u.slice(0, 30);
 }
 
-// auto refresh
+function parseFullEmail(email){
+  email = String(email || "").trim().toLowerCase();
+
+  // remove spaces
+  email = email.replace(/\s+/g, "");
+
+  // basic format
+  if(!email.includes("@")) return null;
+  const parts = email.split("@");
+  if(parts.length !== 2) return null;
+
+  let user = parts[0];
+  let domain = parts[1];
+
+  user = safeUser(user);
+  if(!user) return null;
+
+  // domain basic check (keep flexible so your 21 domains all work)
+  if(!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) return null;
+
+  return { user, domain, full: `${user}@${domain}` };
+}
+
 function startAutoRefresh(){
   if(inboxTimer) clearInterval(inboxTimer);
-  inboxTimer=setInterval(()=>loadInbox(true),5000);
+  inboxTimer = setInterval(() => loadInbox(true), 5000);
 }
 
-// generate
-async function generateEmail(useCustom){
-  try{
-    let user,domain;
+async function useFullEmail(){
+  const raw = document.getElementById("fullEmail").value;
+  const parsed = parseFullEmail(raw);
 
-    if(useCustom){
-      user=safeUser(document.getElementById("customUser").value);
-      if(!user){ setStatus("Custom name লিখুন"); return; }
-      domain=document.getElementById("domainSelect").value;
-      if(!domain){ setStatus("Domain select করুন"); return; }
-    }else{
-      user=randUser();
-      const domains=await getDomains();
-      domain=domains[Math.random()*domains.length|0];
-    }
-
-    cur={user,domain};
-    document.getElementById("email").innerText=`${user}@${domain}`;
-    setStatus("Email ready. Inbox auto refresh হচ্ছে...");
-    loadInbox();
-    startAutoRefresh();
-
-  }catch(e){
-    setStatus("❌ Generate failed");
+  if(!parsed){
+    setStatus("❌ সঠিকভাবে email দিন: name@domain.com");
+    return;
   }
+
+  cur = { user: parsed.user, domain: parsed.domain };
+  document.getElementById("email").innerText = parsed.full;
+
+  // remember so refresh দিলে হারাবে না
+  localStorage.setItem("last_email_full", parsed.full);
+
+  setStatus("✅ Email set. Inbox auto refresh হচ্ছে...");
+  await loadInbox();
+  startAutoRefresh();
 }
 
-// inbox
 async function loadInbox(silent=false){
-  if(!cur.user) return;
-  if(!silent) setStatus("Checking inbox...");
-  try{
-    const r=await fetch(`${BASE}/api/email/${cur.domain}/${cur.user}/?page=1&limit=20`);
-    const d=await r.json();
-    const mails=d.data?.emails||d.emails||d.data||[];
+  if(!cur.user || !cur.domain){
+    if(!silent) setStatus("আগে email set করুন (Use Email)");
+    return;
+  }
 
-    const box=document.getElementById("inbox");
+  if(!silent) setStatus("Checking inbox...");
+
+  try{
+    const url = `${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/?page=1&limit=20`;
+    const r = await fetch(url);
+    const d = await r.json();
+
+    const mails = d?.data?.emails || d?.emails || d?.data || [];
+
+    const box = document.getElementById("inbox");
     if(!mails.length){
-      box.innerHTML="No mail yet. Auto refreshing...";
+      box.innerHTML = `<div class="muted">No mail yet. Auto refreshing...</div>`;
+      if(!silent) setStatus("No mail yet. Auto refreshing...");
       return;
     }
 
-    box.innerHTML=mails.map(m=>`
-      <div class="mail" onclick="openMail('${m.id||m.email_id||m._id}')">
-      <b>${m.subject||"No subject"}</b><br>
-      <small>${m.from||"unknown"}</small>
+    box.innerHTML = mails.map(m => `
+      <div class="mail" onclick="openMail('${(m.id||m.email_id||m._id)}')">
+        <div style="font-weight:900">${escapeHtml(m.subject || "No subject")}</div>
+        <div class="muted">${escapeHtml(m.from || m.sender || "unknown")}</div>
       </div>
     `).join("");
 
-    if(!silent) setStatus(`Inbox loaded (${mails.length})`);
+    if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
   }catch(e){
-    document.getElementById("inbox").innerText="Inbox load failed";
+    document.getElementById("inbox").innerHTML = `<div class="muted">Inbox load failed. Domain supported না হতে পারে / নেট সমস্যা।</div>`;
+    if(!silent) setStatus("❌ Inbox load failed");
   }
 }
 
-// open mail
 async function openMail(id){
-  document.getElementById("mail").innerText="Loading...";
+  const mailBox = document.getElementById("mail");
+  mailBox.innerHTML = `<div class="muted center">Loading mail...</div>`;
+
   try{
-    const r=await fetch(`${BASE}/api/email/${cur.domain}/${cur.user}/${id}`);
-    const d=await r.json();
-    const m=d.data?.email||d.email||d;
-    document.getElementById("mail").innerHTML=`
-      <b>${m.subject||""}</b><br>
-      <small>${m.from||""}</small><hr>
-      <pre>${m.body||m.text||"(empty)"}</pre>
+    const url = `${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const m = d?.data?.email || d?.email || d;
+
+    const body = m?.body || m?.text || m?.html || "(empty)";
+
+    mailBox.innerHTML = `
+      <div style="font-weight:900;font-size:16px;margin-bottom:6px">${escapeHtml(m?.subject || "")}</div>
+      <div class="muted" style="margin-bottom:10px"><b>From:</b> ${escapeHtml(m?.from || m?.sender || "")}</div>
+      <div style="border:1px solid #eef2f7; border-radius:12px; padding:12px;">
+        <pre>${escapeHtml(body)}</pre>
+      </div>
     `;
   }catch(e){
-    document.getElementById("mail").innerText="Mail open failed";
+    mailBox.innerHTML = `<div class="muted center">Mail open failed</div>`;
   }
 }
 
-// copy
 function copyEmail(){
-  const e=document.getElementById("email").innerText;
-  if(!e||e==="---") return;
+  const e = document.getElementById("email").innerText;
+  if(!e || e === "---") { setStatus("আগে email set করুন"); return; }
   navigator.clipboard.writeText(e);
-  setStatus("Copied!");
+  setStatus("✅ Copied!");
 }
 
-// init
-loadDomainsToSelect();
-document.addEventListener("visibilitychange",()=>{
-  if(!document.hidden && cur.user) loadInbox(true);
+function forgetEmail(){
+  localStorage.removeItem("last_email_full");
+  cur = { user:null, domain:null };
+  document.getElementById("fullEmail").value = "";
+  document.getElementById("email").innerText = "---";
+  document.getElementById("inbox").innerHTML = `<div class="muted">No mail yet</div>`;
+  document.getElementById("mail").innerHTML = `<div class="muted center">Select a mail</div>`;
+  setStatus("Cleared. Full email দিয়ে Use করুন।");
+  if(inboxTimer) clearInterval(inboxTimer);
+  inboxTimer = null;
+}
+
+// page load: last used email auto restore
+(function restoreLast(){
+  const saved = localStorage.getItem("last_email_full");
+  if(saved){
+    document.getElementById("fullEmail").value = saved;
+    const parsed = parseFullEmail(saved);
+    if(parsed){
+      cur = { user: parsed.user, domain: parsed.domain };
+      document.getElementById("email").innerText = parsed.full;
+      setStatus("✅ Last email loaded. Inbox auto refresh হচ্ছে...");
+      loadInbox(true);
+      startAutoRefresh();
+    }
+  }
+})();
+
+// mobile: tab background থেকে ফিরে এলে একবার রিফ্রেশ
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && cur.user) loadInbox(true);
 });
 </script>
 
