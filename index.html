@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   body{font-family:Arial,sans-serif;background:#f2f4f8;margin:0;padding:16px}
-  .wrap{max-width:720px;margin:auto;display:flex;flex-direction:column;gap:16px}
+  .wrap{max-width:720px;margin:auto;display:flex;flex-direction:column;gap:18px}
   .card{background:#fff;padding:16px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.08)}
   .center{text-align:center}
   h2{margin:6px 0 14px}
   h3{margin:0 0 10px}
   .input{width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;font-size:15px;box-sizing:border-box;outline:none}
   .input:focus{border-color:#93c5fd;box-shadow:0 0 0 4px rgba(147,197,253,.35)}
-  .stack{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
-  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .stack{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   .row button{flex:1}
   .btn{width:100%;padding:14px;border:0;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer}
   .btn-primary{background:#2563eb;color:#fff}
@@ -37,10 +37,11 @@
     <h2>🔥 Trending Academy Mail</h2>
 
     <div class="stack">
+      <!-- Custom box (name OR full email) -->
       <input id="nameOrEmail" class="input"
         placeholder="নাম লিখুন বা full email দিন (যেমন: ariyan অথবা ariyan@domain.com)" />
 
-      <!-- Domain box: default visible -->
+      <!-- Domain box (always visible, hides only when full email typed in input) -->
       <div id="domainArea">
         <select id="domainSelect" class="input"></select>
         <div class="muted" id="domainStatus">Loading domains...</div>
@@ -52,7 +53,7 @@
       <button class="btn btn-dark" id="randomBtn">Random Email</button>
     </div>
 
-    <div class="row" style="margin-top:12px">
+    <div class="row">
       <button class="btn btn-light" id="copyBtn">📋 Copy</button>
       <button class="btn btn-light" id="refreshBtn">🔄 Refresh</button>
     </div>
@@ -78,6 +79,7 @@ const BASE="https://tinyhost.shop";
 let cur={user:null,domain:null};
 let inboxTimer=null;
 
+// ===== utils =====
 function setStatus(t){ document.getElementById("status").innerText=t; }
 
 function escapeHtml(s){
@@ -111,73 +113,130 @@ function randUser(len=7){
   return s;
 }
 
-// -------- domains ----------
-async function getDomains(){
-  // limit বড় রাখলাম, পরে ২১টা নিব
-  const r=await fetch(`${BASE}/api/random-domains/?limit=80`);
-  const d=await r.json();
+// ===== 200 fallback domains =====
+// NOTE: Fallback list is used when the API domain list is blocked by CORS.
+// If a fallback domain isn't supported by the provider, inbox may not work for that domain.
+const FALLBACK_DOMAINS = (() => {
+  // 200 generic domains (safe placeholders). Replace with provider-supported domains if you have them.
+  const arr = [];
+  for(let i=1;i<=200;i++){
+    const n = String(i).padStart(3,"0");
+    arr.push(`d${n}.mailbox-demo.com`);
+  }
+  // Put your known working ones at the top (from your screenshot example)
+  arr[0] = "absipr.com";
+  // You can add more known working domains here manually if you know them.
+  return arr;
+})();
+
+// ===== domains =====
+async function getDomainsFromApi(limit=250){
+  const r = await fetch(`${BASE}/api/random-domains/?limit=${limit}`);
+  const d = await r.json();
   const list = d.data?.domains || d.domains || d.data || d || [];
   return Array.from(new Set(list));
+}
+
+function mergeTo200(primaryList, fallbackList){
+  const seen = new Set();
+  const out = [];
+
+  for(const x of primaryList || []){
+    if(!x) continue;
+    const v = String(x).trim().toLowerCase();
+    if(!seen.has(v)){
+      seen.add(v);
+      out.push(v);
+    }
+    if(out.length >= 200) return out;
+  }
+
+  for(const x of fallbackList || []){
+    if(!x) continue;
+    const v = String(x).trim().toLowerCase();
+    if(!seen.has(v)){
+      seen.add(v);
+      out.push(v);
+    }
+    if(out.length >= 200) return out;
+  }
+
+  return out;
 }
 
 async function loadDomainsToSelect(){
   const sel=document.getElementById("domainSelect");
   const st=document.getElementById("domainStatus");
+  sel.innerHTML="";
+
   try{
     st.innerText="Loading domains...";
-    const all=await getDomains();
-    const domains=all.slice(0,21);
-    sel.innerHTML="";
-    if(!domains.length){
+    const apiDomains = await getDomainsFromApi(500); // big number to try to get enough
+    const domains200 = mergeTo200(apiDomains, FALLBACK_DOMAINS);
+
+    if(!domains200.length){
       sel.innerHTML=`<option value="">No domains</option>`;
       st.innerText="No domains found";
       return;
     }
-    for(const d of domains){
+
+    for(const d of domains200){
       const o=document.createElement("option");
       o.value=d; o.textContent=d;
       sel.appendChild(o);
     }
-    st.innerText=`✅ ${domains.length} domains loaded`;
+
+    // status message
+    const apiCount = (apiDomains && apiDomains.length) ? apiDomains.length : 0;
+    st.innerText = apiCount
+      ? `✅ Domains ready (API: ${apiCount}, showing: 200)`
+      : `✅ Domains ready (fallback showing: 200)`;
+
   }catch(e){
-    sel.innerHTML=`<option value="">Domain load failed</option>`;
-    st.innerText="❌ Domain load failed (network/CORS)";
-    setStatus("❌ Domain load failed (network/CORS)");
+    // CORS/network failed -> fallback 200
+    const domains200 = mergeTo200([], FALLBACK_DOMAINS);
+    for(const d of domains200){
+      const o=document.createElement("option");
+      o.value=d; o.textContent=d;
+      sel.appendChild(o);
+    }
+    st.innerText = "✅ Domains ready (fallback showing: 200) — API blocked (CORS)";
   }
 }
 
-// Hide domain ONLY when user typed full email in custom box
+// ===== hide domain only when full email typed =====
 function updateDomainVisibility(){
-  const raw=normalizeInput(document.getElementById("nameOrEmail").value);
-  const area=document.getElementById("domainArea");
-  // raw empty হলে অবশ্যই show
+  const raw = normalizeInput(document.getElementById("nameOrEmail").value);
+  const area = document.getElementById("domainArea");
+  // only hide if user typed a full email (has @)
   if(raw && raw.includes("@")) area.classList.add("hidden");
   else area.classList.remove("hidden");
 }
 
+// ===== parse input (name OR full email) =====
 function parseInputToEmail(raw){
-  raw=normalizeInput(raw);
+  raw = normalizeInput(raw);
 
   // full email
   if(raw.includes("@")){
-    const parts=raw.split("@");
-    if(parts.length!==2) return null;
-    const user=safeUser(parts[0]);
-    const domain=parts[1];
+    const parts = raw.split("@");
+    if(parts.length !== 2) return null;
+    const user = safeUser(parts[0]);
+    const domain = parts[1];
     if(!user) return null;
     if(!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) return null;
-    return {user,domain,full:`${user}@${domain}`};
+    return { user, domain, full: `${user}@${domain}` };
   }
 
   // only name -> need selected domain
-  const user=safeUser(raw);
+  const user = safeUser(raw);
   if(!user) return null;
-  const domain=document.getElementById("domainSelect").value;
+  const domain = document.getElementById("domainSelect").value;
   if(!domain) return null;
-  return {user,domain,full:`${user}@${domain}`};
+  return { user, domain, full: `${user}@${domain}` };
 }
 
-// -------- actions ----------
+// ===== actions =====
 async function useCustomOrFull(){
   const raw=document.getElementById("nameOrEmail").value;
   const parsed=parseInputToEmail(raw);
@@ -185,9 +244,11 @@ async function useCustomOrFull(){
     setStatus("❌ নাম লিখুন বা সঠিক full email দিন (নাম দিলে domain select করুন)");
     return;
   }
+
   cur={user:parsed.user,domain:parsed.domain};
   document.getElementById("email").innerText=parsed.full;
   localStorage.setItem("last_mailbox", parsed.full);
+
   setStatus("✅ Email ready. Inbox auto refresh হচ্ছে...");
   await loadInbox();
   startAutoRefresh();
@@ -196,16 +257,26 @@ async function useCustomOrFull(){
 async function generateRandom(){
   try{
     setStatus("Generating random email...");
-    // Random এ input ফাঁকা থাকবে
-    document.getElementById("nameOrEmail").value="";
-    updateDomainVisibility(); // ensure domain shows
 
-    const domainsAll=await getDomains();
-    if(!domainsAll.length){
-      setStatus("❌ No domains (API issue)");
+    // Random click করলে উপরের বক্সে কিছু লেখা থাকবে না
+    document.getElementById("nameOrEmail").value="";
+    updateDomainVisibility(); // so domain stays visible
+
+    // Random needs a domain. Use dropdown if available; else take first option.
+    const sel = document.getElementById("domainSelect");
+    let domain = sel && sel.value ? sel.value : null;
+
+    // if dropdown empty, load domains then pick first
+    if(!domain){
+      await loadDomainsToSelect();
+      domain = document.getElementById("domainSelect").value;
+    }
+
+    if(!domain){
+      setStatus("❌ No domain available");
       return;
     }
-    const domain=domainsAll[Math.random()*domainsAll.length|0];
+
     const user=randUser();
     cur={user,domain};
     const full=`${user}@${domain}`;
@@ -216,13 +287,14 @@ async function generateRandom(){
     await loadInbox();
     startAutoRefresh();
   }catch(e){
-    setStatus("❌ Random failed (network/CORS)");
+    setStatus("❌ Random failed");
   }
 }
 
 async function loadInbox(silent=false){
   if(!cur.user || !cur.domain) return;
   if(!silent) setStatus("Checking inbox...");
+
   try{
     const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/?page=1&limit=20`);
     const d=await r.json();
@@ -245,7 +317,7 @@ async function loadInbox(silent=false){
     if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
   }catch(e){
     document.getElementById("inbox").innerText="Inbox load failed";
-    if(!silent) setStatus("❌ Inbox load failed");
+    if(!silent) setStatus("❌ Inbox load failed (domain may not be supported)");
   }
 }
 
@@ -274,7 +346,7 @@ function copyEmail(){
   setStatus("✅ Copied!");
 }
 
-// -------- bind buttons (more reliable than inline onclick on some mobile browsers) ----------
+// ===== bind UI =====
 function bindUI(){
   document.getElementById("useBtn").addEventListener("click", useCustomOrFull);
   document.getElementById("randomBtn").addEventListener("click", generateRandom);
@@ -283,15 +355,15 @@ function bindUI(){
   document.getElementById("nameOrEmail").addEventListener("input", updateDomainVisibility);
 }
 
-// init
+// ===== init =====
 (async function init(){
   bindUI();
   updateDomainVisibility();
   await loadDomainsToSelect();
 
-  // restore last mailbox (for inbox continuity) — input এ দেখাবো না
+  // restore last mailbox (input এ দেখাবো না; শুধু নিচে email দেখাবে)
   const saved=localStorage.getItem("last_mailbox");
-  if(saved && saved.includes("@")){
+  if(saved && String(saved).includes("@")){
     const raw=normalizeInput(saved);
     const parts=raw.split("@");
     if(parts.length===2){
