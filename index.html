@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Temp Mail</title>
+<title>Trending Academy Mail</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{
@@ -74,6 +74,7 @@ h2{margin:6px 0 12px}
 .mail:hover{background:#fafafa}
 pre{white-space:pre-wrap;margin:0}
 small{color:#6b7280}
+.hidden{display:none !important;}
 </style>
 </head>
 <body>
@@ -85,14 +86,17 @@ small{color:#6b7280}
   <h2>📧 Temp Mail</h2>
 
   <!-- ONE BOX: name OR full email -->
-  <input id="nameOrEmail" class="input" placeholder="নাম লিখুন বা full email দিন (যেমন: ariyan অথবা ariyan@domain.com)" />
+  <input id="nameOrEmail" class="input"
+         placeholder="নাম লিখুন বা full email দিন (যেমন: Tamim অথবা tamim@domain.com)" />
 
-  <!-- domain dropdown (used when user gives only name) -->
-  <select id="domainSelect" class="input"></select>
-  <div class="muted" id="domainStatus">Loading domains...</div>
+  <!-- domain area (auto hide/show) -->
+  <div id="domainArea">
+    <select id="domainSelect" class="input"></select>
+    <div class="muted" id="domainStatus">Loading domains...</div>
+  </div>
 
   <div class="row">
-    <button class="btn btn-primary" onclick="useCustomOrFull()">Use</button>
+    <button class="btn btn-primary" onclick="useCustomOrFull()">Use Custom</button>
     <button class="btn btn-dark" onclick="generateRandom()">Random Email</button>
   </div>
 
@@ -146,11 +150,16 @@ function safeUser(u){
   return u.slice(0,30);
 }
 
-function parseInputToEmail(raw){
+function normalizeInput(raw){
   raw = String(raw||"").trim().toLowerCase();
   raw = raw.replace(/\s+/g,"");
+  return raw;
+}
 
-  // if full email
+function parseInputToEmail(raw){
+  raw = normalizeInput(raw);
+
+  // full email (contains @)
   if(raw.includes("@")){
     const parts = raw.split("@");
     if(parts.length !== 2) return null;
@@ -161,7 +170,7 @@ function parseInputToEmail(raw){
     return { user, domain, full: `${user}@${domain}` };
   }
 
-  // if only name -> take domain from dropdown
+  // only name -> domain from dropdown
   const user = safeUser(raw);
   if(!user) return null;
   const domain = document.getElementById("domainSelect").value;
@@ -182,31 +191,53 @@ function randUser(len=7){
 }
 
 // ===== domains =====
+// এখানে আগে limit=20 ছিল — তাই ২০টা দেখাচ্ছিল। এখন বড় করে দিলাম, তারপর ২১টা সিলেক্ট করব।
 async function getDomains(){
-  const r=await fetch(BASE+"/api/random-domains/?limit=20");
+  const r=await fetch(BASE+"/api/random-domains/?limit=50");
   const d=await r.json();
-  return d.data?.domains||d.domains||d.data||d||[];
+  const list = d.data?.domains||d.domains||d.data||d||[];
+  // unique রাখি
+  return Array.from(new Set(list));
 }
 
 async function loadDomainsToSelect(){
   try{
-    const domains=await getDomains();
+    const domainsAll = await getDomains();
+    const domains = domainsAll.slice(0, 21); // আপনার চাওয়া ২১টা
     const sel=document.getElementById("domainSelect");
     sel.innerHTML="";
+
     if(!domains.length){
       sel.innerHTML = `<option value="">No domains</option>`;
       document.getElementById("domainStatus").innerText="No domains found";
       return;
     }
+
     domains.forEach(d=>{
       const o=document.createElement("option");
       o.value=d; o.textContent=d;
       sel.appendChild(o);
     });
-    document.getElementById("domainStatus").innerText=`✅ ${domains.length} domains loaded`;
+
+    // যদি API ২১টার কম দেয়, সেটা এখানে দেখাবে
+    document.getElementById("domainStatus").innerText=
+      `✅ ${domains.length} domains loaded` + (domainsAll.length < 21 ? " (API কম দিয়েছে)" : "");
   }catch(e){
     document.getElementById("domainStatus").innerText="❌ Domain load failed";
     document.getElementById("domainSelect").innerHTML = `<option value="">Domain load failed</option>`;
+  }
+}
+
+// ===== auto hide/show domain dropdown =====
+function updateDomainVisibility(){
+  const raw = normalizeInput(document.getElementById("nameOrEmail").value);
+  const domainArea = document.getElementById("domainArea");
+
+  // @ থাকলে full email ধরা হবে -> domain dropdown hide
+  if(raw.includes("@")){
+    domainArea.classList.add("hidden");
+  }else{
+    domainArea.classList.remove("hidden");
   }
 }
 
@@ -216,14 +247,13 @@ async function useCustomOrFull(){
   const parsed = parseInputToEmail(raw);
 
   if(!parsed){
-    setStatus("❌ নাম লিখুন বা সঠিক full email দিন, আর domain select আছে কিনা দেখুন");
+    setStatus("❌ নাম লিখুন বা সঠিক full email দিন (নাম দিলে domain select করতে হবে)");
     return;
   }
 
   cur = { user: parsed.user, domain: parsed.domain };
   document.getElementById("email").innerText = parsed.full;
 
-  // remember last used mailbox
   localStorage.setItem("last_mailbox", parsed.full);
 
   setStatus("✅ Email ready. Inbox auto refresh হচ্ছে...");
@@ -234,14 +264,16 @@ async function useCustomOrFull(){
 async function generateRandom(){
   try{
     setStatus("Generating random email...");
-    const domains = await getDomains();
-    const domain = domains[Math.random()*domains.length|0];
+    const domainsAll = await getDomains();
+    const domain = domainsAll[Math.random()*domainsAll.length|0];
     const user = randUser();
 
     cur = { user, domain };
     const full = `${user}@${domain}`;
     document.getElementById("email").innerText = full;
-    document.getElementById("nameOrEmail").value = full; // show it in the box
+    document.getElementById("nameOrEmail").value = full;
+
+    updateDomainVisibility(); // random দিলে @ আছে -> hide
 
     localStorage.setItem("last_mailbox", full);
 
@@ -256,6 +288,7 @@ async function generateRandom(){
 async function loadInbox(silent=false){
   if(!cur.user || !cur.domain) return;
   if(!silent) setStatus("Checking inbox...");
+
   try{
     const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/?page=1&limit=20`);
     const d=await r.json();
@@ -308,41 +341,42 @@ function copyEmail(){
   setStatus("✅ Copied!");
 }
 
-// restore last mailbox on load
+// ===== restore last mailbox =====
 (function restore(){
   const saved = localStorage.getItem("last_mailbox");
   if(saved){
     document.getElementById("nameOrEmail").value = saved;
-    // set later after domains loaded
+    updateDomainVisibility();
   }
 })();
 
-// init
+// ===== init =====
 (async function init(){
   await loadDomainsToSelect();
 
-  // after domains loaded, if we have saved mailbox, apply it
+  // restore saved mailbox inbox (if any)
   const saved = localStorage.getItem("last_mailbox");
   if(saved){
-    const parsed = (function(){
-      // parse full email always (saved is full)
-      const parts = String(saved).toLowerCase().trim().split("@");
-      if(parts.length !== 2) return null;
-      const user = safeUser(parts[0]);
-      const domain = parts[1];
-      if(!user || !domain) return null;
-      return { user, domain, full: `${user}@${domain}` };
-    })();
-
-    if(parsed){
-      cur = { user: parsed.user, domain: parsed.domain };
-      document.getElementById("email").innerText = parsed.full;
-      setStatus("✅ Last email loaded. Inbox auto refresh হচ্ছে...");
-      loadInbox(true);
-      startAutoRefresh();
+    const raw = normalizeInput(saved);
+    if(raw.includes("@")){
+      const parts = raw.split("@");
+      if(parts.length === 2){
+        const user = safeUser(parts[0]);
+        const domain = parts[1];
+        if(user && domain){
+          cur = { user, domain };
+          document.getElementById("email").innerText = `${user}@${domain}`;
+          setStatus("✅ Last email loaded. Inbox auto refresh হচ্ছে...");
+          loadInbox(true);
+          startAutoRefresh();
+        }
+      }
     }
   }
 })();
+
+// auto hide/show while typing
+document.getElementById("nameOrEmail").addEventListener("input", updateDomainVisibility);
 
 // mobile: back to tab
 document.addEventListener("visibilitychange",()=>{
