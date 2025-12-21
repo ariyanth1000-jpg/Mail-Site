@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>My Temp Mail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="font-family:Arial;padding:15px">
+
+<h2>My Temp Mail</h2>
+
+<button onclick="generateEmail()">Generate Email</button>
+<p><b>Email:</b> <span id="email">---</span></p>
+
+<button onclick="loadInbox()">Refresh Inbox</button>
+<div id="inbox" style="margin-top:10px;"></div>
+
+<hr>
+<div id="mail"></div>
+
+<script>
+const BASE = "https://tinyhost.shop";
+let current = { user:null, domain:null };
+
+function randUser(){
+  const c="abcdefghijklmnopqrstuvwxyz0123456789";
+  let s="";
+  for(let i=0;i<7;i++) s+=c[Math.floor(Math.random()*c.length)];
+  return s;
+}
+
+async function generateEmail(){
+  document.getElementById("inbox").innerText="Loading...";
+  const r=await fetch(BASE+"/api/random-domains/?limit=10");
+  const d=await r.json();
+  const domains=d.data?.domains||d.domains||d.data||d;
+  const domain=domains[Math.floor(Math.random()*domains.length)];
+  const user=randUser();
+  current={user,domain};
+  document.getElementById("email").innerText=user+"@"+domain;
+  loadInbox();
+}
+
+async function loadInbox(){
+  if(!current.user) return;
+  document.getElementById("inbox").innerText="Checking inbox...";
+  const r=await fetch(`${BASE}/api/email/${current.domain}/${current.user}/?page=1&limit=20`);
+  const d=await r.json();
+  const mails=d.data?.emails||d.emails||d.data||[];
+  if(!mails.length){
+    document.getElementById("inbox").innerText="No mail yet. Refresh later.";
+    return;
+  }
+  document.getElementById("inbox").innerHTML=mails.map(m=>`
+    <div style="border:1px solid #ddd;padding:8px;margin:6px 0"
+      onclick="openMail('${m.id||m.email_id||m._id}')">
+      <b>${m.subject||"No subject"}</b><br>
+      <small>${m.from||"unknown"}</small>
+    </div>
+  `).join("");
+}
+
+async function openMail(id){
+  document.getElementById("mail").innerText="Loading mail...";
+  const r=await fetch(`${BASE}/api/email/${current.domain}/${current.user}/${id}`);
+  const d=await r.json();
+  const m=d.data?.email||d.email||d;
+  document.getElementById("mail").innerHTML=`
+    <h3>${m.subject||""}</h3>
+    <p><b>From:</b> ${m.from||""}</p>
+    <pre style="white-space:pre-wrap">${m.body||m.text||"(empty)"}</pre>
+  `;
+}
+</script>
+
+</body>
+</html>
