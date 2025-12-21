@@ -246,7 +246,7 @@ async function useCustomOrFull(){
   const parsed = parseInputToEmail(raw);
 
   if(!parsed){
-    setStatus("❌ নাম লিখুন বা সঠিক full email দিন (নাম দিলে domain select করতে হবে)");
+    setStatus("full email or name & domain select");
     return;
   }
 
@@ -255,7 +255,7 @@ async function useCustomOrFull(){
 
   localStorage.setItem("last_mailbox", parsed.full);
 
-  setStatus("✅ Email ready. Inbox auto refresh হচ্ছে...");
+  setStatus("✅ Email ready. Inbox auto refreshing..");
   await loadInbox();
   startAutoRefresh();
 }
@@ -277,7 +277,7 @@ async function generateRandom(){
 
     localStorage.setItem("last_mailbox", full);
 
-    setStatus("✅ Random email ready. Inbox auto refresh হচ্ছে...");
+    setStatus("✅ Random email ready. Inbox auto refresh....");
     await loadInbox();
     startAutoRefresh();
   }catch(e){
@@ -364,7 +364,7 @@ function copyEmail(){
         if(user && domain){
           cur = { user, domain };
           document.getElementById("email").innerText = `${user}@${domain}`;
-          setStatus("✅ Last email loaded. Inbox auto refresh হচ্ছে...");
+          setStatus("✅ Last email loaded. Inbox auto refresh....");
           loadInbox(true);
           startAutoRefresh();
         }
