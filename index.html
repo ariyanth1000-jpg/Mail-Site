@@ -70,7 +70,7 @@ pre{white-space:pre-wrap;margin:0}
 small{color:#6b7280}
 .hidden{display:none !important;}
 
-/* ✅ Inbox wrapper like screenshot */
+/* ✅ Inbox wrapper */
 .inboxShell{
   margin-top:10px;
   border-radius:18px;
@@ -78,6 +78,8 @@ small{color:#6b7280}
   border:1px solid #e5e7eb;
   background:#fff;
 }
+
+/* ✅ prettier title line */
 .inboxTitle{
   display:flex;
   align-items:center;
@@ -85,12 +87,26 @@ small{color:#6b7280}
   gap:10px;
   font-weight:900;
   font-size:22px;
-  padding:14px 12px;
+  padding:16px 12px;
+  color:#0f172a;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
   border-bottom:1px solid #eef2f7;
+  position:relative;
+}
+.inboxTitle:after{
+  content:"";
+  position:absolute;
+  left:18px; right:18px; bottom:8px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#2563eb,#22c55e,#facc15);
+  opacity:.8;
 }
 .inboxIcon{
   font-size:22px;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.10));
 }
+
 .inboxList{
   padding:0;
   margin:0;
@@ -101,7 +117,7 @@ small{color:#6b7280}
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  padding:14px 14px;          /* ✅ compact */
+  padding:12px 14px;
   border-top:1px solid #eef2f7;
   background:#fff;
 }
@@ -121,7 +137,6 @@ small{color:#6b7280}
   text-overflow:ellipsis;
 }
 
-/* ✅ View button ALWAYS inside */
 .viewRight{
   flex:0 0 auto;
   display:flex;
@@ -142,7 +157,7 @@ small{color:#6b7280}
 }
 .btnViewPill:active{ transform:scale(.99); }
 
-/* ✅ Detail (insert only after view click) */
+/* ✅ Detail */
 .detailWrap{
   padding:12px 14px 16px;
   border-top:1px solid #eef2f7;
@@ -188,15 +203,51 @@ small{color:#6b7280}
 }
 .bodyText{padding:12px;}
 
-/* ✅ mobile fit */
 @media (max-width:560px){
-  .mailItem{ padding:12px 12px; gap:8px; }
+  .mailItem{ padding:10px 12px; gap:8px; }
   .subjectLeft{ font-size:16px; }
   .btnViewPill{ min-width:74px; max-width:74px; padding:9px 10px; }
   .detailWrap{ padding:10px 12px 14px; }
+  .inboxTitle{ font-size:20px; padding:14px 10px; }
 }
 @media (max-width:360px){
   .btnViewPill{ min-width:68px; max-width:68px; padding:8px 9px; font-size:12px; }
+}
+
+/* ✅ click-to-copy code styling (Inbox + Detail + Body) */
+.taCode{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:10px;
+  background:#eef2ff;
+  border:1px solid #c7d2fe;
+  font-weight:900;
+  letter-spacing:.4px;
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.taCode:active{ transform:scale(.99); }
+
+.taCopiedToast{
+  position:fixed;
+  left:50%;
+  bottom:16px;
+  transform:translateX(-50%);
+  background:#111827;
+  color:#fff;
+  padding:10px 12px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:13px;
+  box-shadow:0 12px 28px rgba(0,0,0,.18);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.taCopiedToast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(-4px);
 }
 </style>
 </head>
@@ -222,7 +273,7 @@ small{color:#6b7280}
 
   <div class="row" style="margin-top:8px">
     <button class="btn btn-green" onclick="copyEmail()">📋 Copy Mail</button>
-    <button class="btn btn-yellow" onclick="refreshInboxButton()">🔄 Refresh Inbox</button>
+    <button class="btn btn-yellow" onclick="loadInbox(false)">🔄 Refresh Inbox</button>
   </div>
 
   <div class="pill">
@@ -234,18 +285,20 @@ small{color:#6b7280}
 
 <!-- INBOX -->
 <div class="card" id="inboxCard">
-  <div id="inbox" class="muted" style="margin-top:10px">No mail yet</div>
+  <div id="inbox" class="muted" style="margin-top:10px"></div>
 </div>
 
 </div>
+
+<div id="taToast" class="taCopiedToast">✅ Copied</div>
 
 <script>
 const BASE="https://tinyhost.shop";
 let cur={user:null,domain:null};
 let inboxTimer=null;
 
-let openMailId=null;        // currently viewed mail id
-let openIndex=null;         // which list index is open
+let openMailId=null;
+let openIndex=null;
 
 function setStatus(t){ document.getElementById("status").innerText=t; }
 
@@ -306,7 +359,6 @@ function randUser(len=7){
   return s;
 }
 
-/* ✅ domain fallback */
 const FALLBACK_DOMAINS = [
   "sportykiddo.com","mailum.com","tmails.net","tmpbox.net","maildrop.cc",
   "inboxify.net","fastinbox.me","tempmx.com","dropmail.one","mailgen.cc",
@@ -364,12 +416,6 @@ function updateDomainVisibility(){
   else domainArea.classList.remove("hidden");
 }
 
-function refreshInboxButton(){
-  // ✅ refresh button: close view + resume auto refresh + reload inbox
-  closeView(true);
-  loadInbox(false);
-}
-
 async function useCustomOrFull(){
   const raw = document.getElementById("nameOrEmail").value;
   const parsed = parseInputToEmail(raw);
@@ -415,8 +461,48 @@ async function generateRandom(){
   }
 }
 
-/* ✅ render inbox like screenshot */
-function renderInbox(mails){
+function renderInboxShell(innerListHtml){
+  return `
+    <div class="inboxShell">
+      <div class="inboxTitle"><span class="inboxIcon">📥</span> TA Gmail Inbox</div>
+      ${innerListHtml}
+    </div>
+  `;
+}
+
+/* ✅ ONLY numbers (4-8 digits) will be clickable */
+function extractCodesFromText(text){
+  const t = String(text||"");
+  const found = t.match(/\b\d{4,8}\b/g) || [];
+  const uniq = [];
+  for(const x of found){
+    if(!uniq.includes(x)) uniq.push(x);
+  }
+  return uniq;
+}
+
+function textToHtmlWithCodes(text, wrapWithEllipsis){
+  const safe = escapeHtml(text || "");
+  const codes = extractCodesFromText(text);
+
+  if(!codes.length){
+    return wrapWithEllipsis
+      ? `<span class="ellipsis">${safe}</span>`
+      : safe;
+  }
+
+  let html = safe;
+  codes.forEach(code=>{
+    const re = new RegExp(`\\b${code}\\b`, "g");
+    html = html.replace(re, `<span class="taCode" data-code="${code}">${code}</span>`);
+  });
+
+  return wrapWithEllipsis
+    ? `<span class="ellipsis">${html}</span>`
+    : html;
+}
+
+function renderInboxList(mails){
   const items = mails.map((m,i)=>{
     const id = (m.id||m.email_id||m._id||"");
     const subject = m.subject || "No subject";
@@ -424,7 +510,7 @@ function renderInbox(mails){
     return `
       <li class="mailItem" id="item-${i}">
         <div class="subjectLeft">
-          <span class="ellipsis">${escapeHtml(subject)}</span>
+          ${textToHtmlWithCodes(subject, true)}
         </div>
         <div class="viewRight">
           <button class="btnViewPill" onclick="toggleView('${escapeHtml(id)}', ${i})">View</button>
@@ -434,12 +520,7 @@ function renderInbox(mails){
     `;
   }).join("");
 
-  return `
-    <div class="inboxShell">
-      <div class="inboxTitle"><span class="inboxIcon">📥</span> TA Mail Inbox</div>
-      <ul class="inboxList">${items}</ul>
-    </div>
-  `;
+  return `<ul class="inboxList">${items}</ul>`;
 }
 
 function closeView(keepRefresh=false){
@@ -450,21 +531,17 @@ function closeView(keepRefresh=false){
   openMailId = null;
   openIndex = null;
 
-  if(!keepRefresh){
-    startAutoRefresh();
-  }
+  if(!keepRefresh) startAutoRefresh();
 }
 
 async function toggleView(id, index){
   if(!id) return;
 
-  // same -> close
   if(openMailId === id){
     closeView(false);
     return;
   }
 
-  // close previous
   if(openIndex !== null && openIndex !== index){
     const prev = document.getElementById(`detail-${openIndex}`);
     if(prev) prev.innerHTML = "";
@@ -473,7 +550,6 @@ async function toggleView(id, index){
   openMailId = id;
   openIndex = index;
 
-  // ✅ stop inbox auto refresh while viewing
   stopAutoRefresh();
 
   const holder = document.getElementById(`detail-${index}`);
@@ -495,6 +571,129 @@ async function toggleView(id, index){
 
   await loadMailIntoDetail(id, index);
 }
+
+/* ✅ text-body numbers clickable */
+function makeBodyTextClickableNumbers(text){
+  const safe = escapeHtml(text || "");
+  return safe.replace(/\b(\d{4,8})\b/g, `<span class="taCode" data-code="$1">$1</span>`);
+}
+
+/* ✅ iframe-body numbers clickable */
+function enableIframeNumberCopy(iframe){
+  if(!iframe) return;
+  const handler = () => {
+    try{
+      const doc = iframe.contentDocument;
+      if(!doc) return;
+
+      const WALKER = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
+        acceptNode(node){
+          if(!node.nodeValue) return NodeFilter.FILTER_REJECT;
+          if(/\b\d{4,8}\b/.test(node.nodeValue)) return NodeFilter.FILTER_ACCEPT;
+          return NodeFilter.FILTER_REJECT;
+        }
+      });
+
+      const textNodes = [];
+      let n;
+      while((n = WALKER.nextNode())) textNodes.push(n);
+
+      textNodes.forEach(node=>{
+        const txt = node.nodeValue;
+        const parts = txt.split(/(\b\d{4,8}\b)/g);
+        if(parts.length <= 1) return;
+
+        const frag = doc.createDocumentFragment();
+        parts.forEach(part=>{
+          if(/^\d{4,8}$/.test(part)){
+            const span = doc.createElement("span");
+            span.textContent = part;
+            span.setAttribute("data-code", part);
+            span.style.display = "inline-block";
+            span.style.padding = "2px 8px";
+            span.style.borderRadius = "10px";
+            span.style.background = "#eef2ff";
+            span.style.border = "1px solid #c7d2fe";
+            span.style.fontWeight = "900";
+            span.style.letterSpacing = ".4px";
+            span.style.cursor = "pointer";
+            span.style.userSelect = "none";
+            span.style.webkitTapHighlightColor = "transparent";
+            frag.appendChild(span);
+          }else{
+            frag.appendChild(doc.createTextNode(part));
+          }
+        });
+        node.parentNode.replaceChild(frag, node);
+      });
+
+      doc.addEventListener("click", async (e)=>{
+        const target = e.target;
+        if(target && target.getAttribute && target.getAttribute("data-code")){
+          const code = target.getAttribute("data-code");
+          if(code) {
+            e.preventDefault();
+            e.stopPropagation();
+            await copyToClipboard(code);
+            showToast("✅ Code Copied: " + code);
+          }
+        }
+      }, { passive:false });
+
+    }catch(err){}
+  };
+
+  iframe.addEventListener("load", handler, { once:true });
+}
+
+/* ✅ toast + clipboard */
+let toastTimer=null;
+function showToast(msg){
+  const t = document.getElementById("taToast");
+  if(!t) return;
+  t.textContent = msg || "✅ Copied";
+  t.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 1200);
+}
+
+async function copyToClipboard(text){
+  try{
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  }catch(e){
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = String(text);
+      ta.style.position="fixed";
+      ta.style.left="-9999px";
+      ta.style.top="0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      return true;
+    }catch(err){
+      return false;
+    }
+  }
+}
+
+/* ✅ ONLY .taCode click => copy */
+document.addEventListener("click", async (e)=>{
+  const el = e.target;
+  if(!el) return;
+  if(el.classList && el.classList.contains("taCode")){
+    const code = el.getAttribute("data-code");
+    if(code){
+      e.preventDefault();
+      e.stopPropagation();
+      await copyToClipboard(code);
+      showToast("✅ Code Copied: " + code);
+    }
+  }
+}, { passive:false });
 
 async function loadMailIntoDetail(id, index){
   const box = document.getElementById(`detailBox-${index}`);
@@ -523,7 +722,7 @@ async function loadMailIntoDetail(id, index){
         <div class="value">${escapeHtml(sender || "—")}</div>
 
         <div class="label">Subject:</div>
-        <div class="value">${escapeHtml(subject || "—")}</div>
+        <div class="value">${textToHtmlWithCodes(subject || "—", false)}</div>
 
         <div class="label">Date:</div>
         <div class="value">${escapeHtml(date || "—")}</div>
@@ -542,9 +741,10 @@ async function loadMailIntoDetail(id, index){
     if(htmlBody && String(htmlBody).trim()){
       bodyBox.innerHTML = `
         <iframe id="mailFrame-${index}" class="bodyFrame"
-          sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+          sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
       `;
       const frame = document.getElementById(`mailFrame-${index}`);
+
       const wrapped = `<!doctype html><html><head><meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <base target="_blank">
@@ -553,12 +753,16 @@ async function loadMailIntoDetail(id, index){
           img{max-width:100%;height:auto}
         </style>
       </head><body>${htmlBody}</body></html>`;
+
       frame.srcdoc = wrapped;
+
+      // ✅ IMPORTANT: now iframe DOM accessible, body number click-to-copy will work
+      enableIframeNumberCopy(frame);
       return;
     }
 
     if(textBody && String(textBody).trim()){
-      bodyBox.innerHTML = `<div class="bodyText"><pre>${escapeHtml(textBody)}</pre></div>`;
+      bodyBox.innerHTML = `<div class="bodyText"><pre>${makeBodyTextClickableNumbers(textBody)}</pre></div>`;
       return;
     }
 
@@ -569,10 +773,15 @@ async function loadMailIntoDetail(id, index){
 }
 
 async function loadInbox(silent=false){
-  if(!cur.user || !cur.domain) return;
+  const box=document.getElementById("inbox");
+
+  if(!cur.user || !cur.domain){
+    box.innerHTML = renderInboxShell(`<div class="muted" style="padding:14px">Set email first.</div>`);
+    return;
+  }
+
   if(!silent) setStatus("Checking inbox...");
 
-  // ✅ while view open -> don't replace inbox
   if(openMailId) return;
 
   try{
@@ -580,17 +789,16 @@ async function loadInbox(silent=false){
     const d=await r.json();
     const mails=d.data?.emails||d.emails||d.data||[];
 
-    const box=document.getElementById("inbox");
     if(!mails.length){
-      box.innerHTML = `<div class="muted">No mail yet. Auto refreshing...</div>`;
+      box.innerHTML = renderInboxShell(`<div class="muted" style="padding:14px">No mail yet. Auto refreshing...</div>`);
       if(!silent) setStatus("No mail yet. Auto refreshing...");
       return;
     }
 
-    box.innerHTML = renderInbox(mails);
+    box.innerHTML = renderInboxShell(renderInboxList(mails));
     if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
   }catch(e){
-    document.getElementById("inbox").innerText="Inbox load failed";
+    box.innerHTML = renderInboxShell(`<div class="muted" style="padding:14px">Inbox load failed</div>`);
     if(!silent) setStatus("❌ Inbox load failed");
   }
 }
@@ -624,6 +832,8 @@ function copyEmail(){
         }
       }
     }
+  }else{
+    loadInbox(true);
   }
 })();
 
