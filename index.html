@@ -50,7 +50,6 @@ h2{margin:6px 0 14px}
 .btn-dark{background:#111827;color:#fff}
 .btn-green{background:#16a34a;color:#fff}
 .btn-yellow{background:#facc15;color:#111827}
-
 .row{
   display:flex;
   gap:12px;
@@ -71,88 +70,82 @@ pre{white-space:pre-wrap;margin:0}
 small{color:#6b7280}
 .hidden{display:none !important;}
 
-/* ✅ INBOX */
-.tableWrap{
+/* ✅ Inbox wrapper like screenshot */
+.inboxShell{
   margin-top:10px;
-  border-radius:12px;
+  border-radius:18px;
   overflow:hidden;
   border:1px solid #e5e7eb;
-}
-.inboxTable{
-  width:100%;
-  border-collapse:collapse;
   background:#fff;
 }
-.inboxTable thead th{
-  background:#334155;
-  color:#fff;
-  font-size:12px;
-  letter-spacing:.4px;
-  text-transform:uppercase;
-  padding:12px 10px;
-  text-align:left;
+.inboxTitle{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-weight:900;
+  font-size:22px;
+  padding:14px 12px;
+  border-bottom:1px solid #eef2f7;
 }
-.inboxTable tbody td{
-  padding:10px 10px;          /* ✅ list gap কম */
-  border-top:1px solid #eef2f7;
-  vertical-align:middle;
-  color:#111827;
-  font-size:14px;
+.inboxIcon{
+  font-size:22px;
 }
-.inboxTable tbody tr:nth-child(even){ background:#f8fafc; }
-
-/* ✅ ONLY Subject + View */
-.senderCol{display:none !important;}
-.dateCol{display:none !important;}
-
-.subjectLine{
+.inboxList{
+  padding:0;
+  margin:0;
+  list-style:none;
+}
+.mailItem{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  width:100%;
-  min-width:0;
+  padding:14px 14px;          /* ✅ compact */
+  border-top:1px solid #eef2f7;
+  background:#fff;
 }
-.subjectText{
+.mailItem:nth-child(even){ background:#fbfdff; }
+
+.subjectLeft{
   min-width:0;
   flex:1;
-  font-weight:800;
+  font-weight:900;
+  font-size:18px;
+  color:#111827;
 }
-.subjectText .ellipsis{
+.subjectLeft .ellipsis{
   display:block;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
-/* ✅ View button always fits right */
-.actionBtnsInline{
+/* ✅ View button ALWAYS inside */
+.viewRight{
   flex:0 0 auto;
   display:flex;
   justify-content:flex-end;
-  min-width:74px;             /* ✅ fixed space so it won't cut */
 }
-.btnMini{
+.btnViewPill{
   border:0;
-  border-radius:999px;
-  padding:8px 10px;
+  background:#3b82f6;
+  color:#fff;
   font-weight:900;
-  cursor:pointer;
-  font-size:12px;
+  border-radius:999px;
+  padding:10px 14px;
   line-height:1;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:74px;             /* ✅ keeps button inside */
-  max-width:74px;
+  min-width:86px;
+  max-width:86px;
+  cursor:pointer;
   box-sizing:border-box;
 }
-.btnView{ background:#3b82f6; color:#fff; }
-.btnMini:active{ transform:scale(.99); }
+.btnViewPill:active{ transform:scale(.99); }
 
-/* ✅ Inline Detail row */
-.detailCell{
-  padding:14px 12px !important;
+/* ✅ Detail (insert only after view click) */
+.detailWrap{
+  padding:12px 14px 16px;
+  border-top:1px solid #eef2f7;
   background:#eef2ff;
 }
 .detailBox{
@@ -195,20 +188,15 @@ small{color:#6b7280}
 }
 .bodyText{padding:12px;}
 
-/* ✅ Mobile fit */
+/* ✅ mobile fit */
 @media (max-width:560px){
-  .inboxTable thead{display:none;}
-  .inboxTable, .inboxTable tbody, .inboxTable tr, .inboxTable td{display:block; width:100%;}
-  .inboxTable tr{border-top:1px solid #eef2f7; padding:8px;}
-  .inboxTable tbody td{border:0; padding:6px 0;}
-  .subjectLine{gap:8px;}
-  .actionBtnsInline{min-width:64px;}
-  .btnMini{min-width:64px; max-width:64px; padding:7px 8px; font-size:11px;}
-  .detailCell{padding:10px 0 !important; background:transparent;}
+  .mailItem{ padding:12px 12px; gap:8px; }
+  .subjectLeft{ font-size:16px; }
+  .btnViewPill{ min-width:74px; max-width:74px; padding:9px 10px; }
+  .detailWrap{ padding:10px 12px 14px; }
 }
 @media (max-width:360px){
-  .actionBtnsInline{min-width:58px;}
-  .btnMini{min-width:58px; max-width:58px; padding:7px 7px; font-size:10.5px;}
+  .btnViewPill{ min-width:68px; max-width:68px; padding:8px 9px; font-size:12px; }
 }
 </style>
 </head>
@@ -222,7 +210,6 @@ small{color:#6b7280}
 
   <input id="nameOrEmail" class="input" placeholder="tamim or tamim@domain.com" />
 
-  <!-- domain area -->
   <div id="domainArea">
     <select id="domainSelect" class="input"></select>
     <div class="muted" id="domainStatus">Loading domains...</div>
@@ -235,7 +222,7 @@ small{color:#6b7280}
 
   <div class="row" style="margin-top:8px">
     <button class="btn btn-green" onclick="copyEmail()">📋 Copy Mail</button>
-    <button class="btn btn-yellow" onclick="resetViewsAndResumeRefresh(); loadInbox();">🔄 Refresh Inbox</button>
+    <button class="btn btn-yellow" onclick="refreshInboxButton()">🔄 Refresh Inbox</button>
   </div>
 
   <div class="pill">
@@ -247,7 +234,6 @@ small{color:#6b7280}
 
 <!-- INBOX -->
 <div class="card" id="inboxCard">
-  <h3 class="center">📥TA Mail Inbox</h3>
   <div id="inbox" class="muted" style="margin-top:10px">No mail yet</div>
 </div>
 
@@ -258,8 +244,8 @@ const BASE="https://tinyhost.shop";
 let cur={user:null,domain:null};
 let inboxTimer=null;
 
-let openKey = null;
-let openMailId = null;
+let openMailId=null;        // currently viewed mail id
+let openIndex=null;         // which list index is open
 
 function setStatus(t){ document.getElementById("status").innerText=t; }
 
@@ -320,12 +306,11 @@ function randUser(len=7){
   return s;
 }
 
-/* ✅ Domain fallback */
+/* ✅ domain fallback */
 const FALLBACK_DOMAINS = [
-  "absipr.com","tmails.net","paharpur.com","mailum.com","fexpost.com",
-  "bexpost.com","mailyou.co","tmpbox.net","maildrop.cc","mailor.net",
-  "mailhub.world","quickmail.click","inboxify.net","fastinbox.me","mailpocket.org",
-  "tmpmail.pro","tempmx.com","dropmail.one","inboxspot.net","mailgen.cc"
+  "sportykiddo.com","mailum.com","tmails.net","tmpbox.net","maildrop.cc",
+  "inboxify.net","fastinbox.me","tempmx.com","dropmail.one","mailgen.cc",
+  "mailhub.world","quickmail.click","inboxspot.net","tmpmail.pro"
 ];
 
 async function getDomains(){
@@ -336,7 +321,7 @@ async function getDomains(){
 
   for(const url of urls){
     try{
-      const r = await fetch(url, { cache: "no-store" });
+      const r = await fetch(url, { cache:"no-store" });
       if(!r.ok) continue;
       const d = await r.json();
       const list = d.data?.domains || d.domains || d.data || d || [];
@@ -355,16 +340,8 @@ async function loadDomainsToSelect(){
 
   try{
     const domainsAll = await getDomains();
-    const domains = domainsAll.slice(0, 200);
-
     sel.innerHTML="";
-    if(!domains.length){
-      sel.innerHTML = `<option value="">No domains</option>`;
-      st.innerText="No domains found";
-      return;
-    }
-
-    domains.forEach(d=>{
+    domainsAll.forEach(d=>{
       const o=document.createElement("option");
       o.value=d; o.textContent=d;
       sel.appendChild(o);
@@ -372,8 +349,8 @@ async function loadDomainsToSelect(){
 
     const usedFallback = domainsAll.join(",") === Array.from(new Set(FALLBACK_DOMAINS)).join(",");
     st.innerText = usedFallback
-      ? `✅ ${domains.length} domains loaded (fallback)`
-      : `✅ ${domains.length} domains loaded`;
+      ? `✅ ${domainsAll.length} domains loaded (fallback)`
+      : `✅ ${domainsAll.length} domains loaded`;
   }catch(e){
     sel.innerHTML = `<option value="">Domain load failed</option>`;
     st.innerText="❌ Domain load failed";
@@ -387,9 +364,10 @@ function updateDomainVisibility(){
   else domainArea.classList.remove("hidden");
 }
 
-function resetViewsAndResumeRefresh(){
-  closeOpenDetail(true);
-  startAutoRefresh();
+function refreshInboxButton(){
+  // ✅ refresh button: close view + resume auto refresh + reload inbox
+  closeView(true);
+  loadInbox(false);
 }
 
 async function useCustomOrFull(){
@@ -405,11 +383,10 @@ async function useCustomOrFull(){
   document.getElementById("email").innerText = parsed.full;
   localStorage.setItem("last_mailbox", parsed.full);
 
-  openKey = null;
-  openMailId = null;
+  closeView(true);
 
   setStatus("✅ Email ready. Inbox auto refreshing..");
-  await loadInbox();
+  await loadInbox(false);
   startAutoRefresh();
 }
 
@@ -426,128 +403,101 @@ async function generateRandom(){
 
     document.getElementById("nameOrEmail").value = "";
     updateDomainVisibility();
-
     localStorage.setItem("last_mailbox", full);
 
-    openKey = null;
-    openMailId = null;
+    closeView(true);
 
     setStatus("✅ Random email ready. Inbox auto refresh....");
-    await loadInbox();
+    await loadInbox(false);
     startAutoRefresh();
   }catch(e){
     setStatus("❌ Random generate failed");
   }
 }
 
-/* ✅ NO empty detail rows anymore */
-function renderInboxTable(mails){
-  const rows = mails.map((m, i)=>{
+/* ✅ render inbox like screenshot */
+function renderInbox(mails){
+  const items = mails.map((m,i)=>{
     const id = (m.id||m.email_id||m._id||"");
-    const key = `k${i}`;
     const subject = m.subject || "No subject";
 
     return `
-      <tr id="row-${key}">
-        <td class="senderCol"></td>
-        <td class="subjectCol">
-          <div class="subjectLine">
-            <div class="subjectText">
-              <span class="ellipsis">${escapeHtml(subject)}</span>
-            </div>
-            <div class="actionBtnsInline">
-              <button class="btnMini btnView" onclick="toggleView('${escapeHtml(id)}','${key}')">View</button>
-            </div>
-          </div>
-        </td>
-        <td class="dateCol"></td>
-      </tr>
+      <li class="mailItem" id="item-${i}">
+        <div class="subjectLeft">
+          <span class="ellipsis">${escapeHtml(subject)}</span>
+        </div>
+        <div class="viewRight">
+          <button class="btnViewPill" onclick="toggleView('${escapeHtml(id)}', ${i})">View</button>
+        </div>
+      </li>
+      <div id="detail-${i}"></div>
     `;
   }).join("");
 
   return `
-    <div class="tableWrap">
-      <table class="inboxTable">
-        <thead>
-          <tr>
-            <th class="senderCol">SENDER</th>
-            <th>SUBJECT</th>
-            <th class="dateCol">DATE</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+    <div class="inboxShell">
+      <div class="inboxTitle"><span class="inboxIcon">📥</span> TA Mail Inbox</div>
+      <ul class="inboxList">${items}</ul>
     </div>
   `;
 }
 
-function closeOpenDetail(keepRefresh=false){
-  if(openKey){
-    const dr = document.getElementById(`detailRow-${openKey}`);
-    if(dr) dr.remove();            // ✅ remove inserted detail row
+function closeView(keepRefresh=false){
+  if(openIndex !== null){
+    const d = document.getElementById(`detail-${openIndex}`);
+    if(d) d.innerHTML = "";
   }
-  openKey = null;
   openMailId = null;
+  openIndex = null;
 
-  if(!keepRefresh) startAutoRefresh();
+  if(!keepRefresh){
+    startAutoRefresh();
+  }
 }
 
-function ensureDetailRow(key){
-  let dr = document.getElementById(`detailRow-${key}`);
-  if(dr) return dr;
+async function toggleView(id, index){
+  if(!id) return;
 
-  const row = document.getElementById(`row-${key}`);
-  if(!row) return null;
+  // same -> close
+  if(openMailId === id){
+    closeView(false);
+    return;
+  }
 
-  dr = document.createElement("tr");
-  dr.id = `detailRow-${key}`;
+  // close previous
+  if(openIndex !== null && openIndex !== index){
+    const prev = document.getElementById(`detail-${openIndex}`);
+    if(prev) prev.innerHTML = "";
+  }
 
-  dr.innerHTML = `
-    <td class="detailCell" colspan="3">
-      <div class="detailBox" id="detailBox-${key}">
+  openMailId = id;
+  openIndex = index;
+
+  // ✅ stop inbox auto refresh while viewing
+  stopAutoRefresh();
+
+  const holder = document.getElementById(`detail-${index}`);
+  if(!holder) return;
+
+  holder.innerHTML = `
+    <div class="detailWrap">
+      <div class="detailBox" id="detailBox-${index}">
         <div class="detailHeader">
           <h4 class="detailTitle">Email Detail</h4>
           <div class="hrBlue"></div>
           <div class="muted">Loading...</div>
         </div>
       </div>
-    </td>
+    </div>
   `;
 
-  row.insertAdjacentElement("afterend", dr);
-  return dr;
+  holder.scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+  await loadMailIntoDetail(id, index);
 }
 
-async function toggleView(id, key){
-  if(!id) return;
-
-  if(openMailId === id){
-    closeOpenDetail();
-    return;
-  }
-
-  // close previous detail
-  if(openKey && openKey !== key){
-    const prev = document.getElementById(`detailRow-${openKey}`);
-    if(prev) prev.remove();
-  }
-
-  openKey = key;
-  openMailId = id;
-
-  // view open -> stop auto refresh
-  stopAutoRefresh();
-
-  const dr = ensureDetailRow(key);
-  if(dr) dr.scrollIntoView({ behavior:"smooth", block:"nearest" });
-
-  await loadMailIntoDetail(id, key);
-}
-
-async function loadMailIntoDetail(id, key){
-  const box = document.getElementById(`detailBox-${key}`);
+async function loadMailIntoDetail(id, index){
+  const box = document.getElementById(`detailBox-${index}`);
   if(!box) return;
 
   try{
@@ -582,20 +532,19 @@ async function loadMailIntoDetail(id, key){
         <div class="value"></div>
       </div>
 
-      <div class="bodyBox" id="bodyBox-${key}">
+      <div class="bodyBox" id="bodyBox-${index}">
         <div class="bodyText muted">(empty)</div>
       </div>
     `;
 
-    const bodyBox = document.getElementById(`bodyBox-${key}`);
+    const bodyBox = document.getElementById(`bodyBox-${index}`);
 
     if(htmlBody && String(htmlBody).trim()){
       bodyBox.innerHTML = `
-        <iframe id="mailFrame-${key}" class="bodyFrame"
+        <iframe id="mailFrame-${index}" class="bodyFrame"
           sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
       `;
-      const frame = document.getElementById(`mailFrame-${key}`);
-
+      const frame = document.getElementById(`mailFrame-${index}`);
       const wrapped = `<!doctype html><html><head><meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <base target="_blank">
@@ -604,7 +553,6 @@ async function loadMailIntoDetail(id, key){
           img{max-width:100%;height:auto}
         </style>
       </head><body>${htmlBody}</body></html>`;
-
       frame.srcdoc = wrapped;
       return;
     }
@@ -624,11 +572,11 @@ async function loadInbox(silent=false){
   if(!cur.user || !cur.domain) return;
   if(!silent) setStatus("Checking inbox...");
 
-  // ✅ view open থাকলে ইনবক্স রিপ্লেস হবে না
+  // ✅ while view open -> don't replace inbox
   if(openMailId) return;
 
   try{
-    const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/?page=1&limit=20`);
+    const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/?page=1&limit=20`, { cache:"no-store" });
     const d=await r.json();
     const mails=d.data?.emails||d.emails||d.data||[];
 
@@ -639,7 +587,7 @@ async function loadInbox(silent=false){
       return;
     }
 
-    box.innerHTML = renderInboxTable(mails);
+    box.innerHTML = renderInbox(mails);
     if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
   }catch(e){
     document.getElementById("inbox").innerText="Inbox load failed";
