@@ -97,37 +97,51 @@ small{color:#6b7280}
 .inboxTable tbody td{
   padding:12px 10px;
   border-top:1px solid #eef2f7;
-  vertical-align:top;
+  vertical-align:middle;
   color:#111827;
   font-size:14px;
 }
 .inboxTable tbody tr:nth-child(even){ background:#f8fafc; }
 
-/* ✅ UPDATED: Sender hidden, only Subject + Actions */
+/* ✅ Sender/Date hidden, only Subject + Actions */
 .senderCol{display:none !important;}
 .dateCol{display:none !important;}
 .subjectCol{width:auto;}
 .actionCol{width:1%; white-space:nowrap;}
 
-.ellipsis{
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-.actionBtns{
+/* ✅ Subject + Actions same line always */
+.subjectLine{
   display:flex;
-  flex-direction:column;
-  gap:8px;
-  align-items:stretch;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+}
+.subjectText{
+  min-width:0;
+  flex:1;
+  font-weight:800;
+}
+.subjectText .ellipsis{
+  display:block;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.actionBtnsInline{
+  display:flex;
+  gap:10px;
+  flex:0 0 auto;
+  white-space:nowrap;
 }
 .btnMini{
   border:0;
-  border-radius:10px;
-  padding:10px 10px;
+  border-radius:12px;
+  padding:10px 14px;
   font-weight:900;
   cursor:pointer;
   font-size:13px;
+  line-height:1;
 }
 .btnView{ background:#3b82f6; color:#fff; }
 .btnDelete{ background:#ef4444; color:#fff; }
@@ -184,23 +198,16 @@ small{color:#6b7280}
 .bodyText{padding:12px;}
 .detailHidden{display:none;}
 
-/* mobile responsive for table */
+/* ✅ Mobile: keep same line too (no stacking) */
 @media (max-width:560px){
   .inboxTable thead{display:none;}
   .inboxTable, .inboxTable tbody, .inboxTable tr, .inboxTable td{display:block; width:100%;}
   .inboxTable tr{border-top:1px solid #eef2f7; padding:10px;}
   .inboxTable tbody td{border:0; padding:6px 0;}
-  .inboxTable tbody td::before{
-    content:attr(data-label);
-    display:block;
-    font-weight:900;
-    color:#6b7280;
-    font-size:12px;
-    margin-bottom:2px;
-    text-transform:uppercase;
-    letter-spacing:.3px;
-  }
-  .actionBtns{flex-direction:row;}
+
+  /* single row feel */
+  .subjectLine{gap:10px;}
+  .btnMini{padding:9px 12px; border-radius:12px; font-size:12px;}
   .detailCell{padding:10px 0 !important; background:transparent;}
 }
 </style>
@@ -253,7 +260,7 @@ let inboxTimer=null;
 
 // track which detail is open
 let openKey = null;
-let openMailId = null; // ✅ keep opened mail id (so auto refresh won't close it)
+let openMailId = null;
 
 // ===== utils =====
 function setStatus(t){ document.getElementById("status").innerText=t; }
@@ -358,7 +365,6 @@ function updateDomainVisibility(){
   const raw = normalizeInput(document.getElementById("nameOrEmail").value);
   const domainArea = document.getElementById("domainArea");
 
-  // শুধু তখনই hide হবে যখন সত্যি সত্যি full email লেখা আছে
   if(raw && raw.includes("@")){
     domainArea.classList.add("hidden");
   }else{
@@ -366,10 +372,10 @@ function updateDomainVisibility(){
   }
 }
 
-// ✅ Refresh Inbox ক্লিক করলে: সব mail view হাইড + auto refresh resume
+// ✅ Refresh Inbox ক্লিক করলে: সব view হাইড + auto refresh resume
 function resetViewsAndResumeRefresh(){
-  closeOpenDetail();    // hides view + clears ids
-  startAutoRefresh();   // resume 5s refresh
+  closeOpenDetail(true);
+  startAutoRefresh();
 }
 
 // ===== actions =====
@@ -387,7 +393,6 @@ async function useCustomOrFull(){
 
   localStorage.setItem("last_mailbox", parsed.full);
 
-  // reset open detail
   openKey = null;
   openMailId = null;
 
@@ -407,13 +412,11 @@ async function generateRandom(){
     const full = `${user}@${domain}`;
     document.getElementById("email").innerText = full;
 
-    // Random Email ক্লিক করলে উপরের বক্স ফাঁকা থাকবে
     document.getElementById("nameOrEmail").value = "";
     updateDomainVisibility();
 
     localStorage.setItem("last_mailbox", full);
 
-    // reset open detail
     openKey = null;
     openMailId = null;
 
@@ -425,38 +428,35 @@ async function generateRandom(){
   }
 }
 
-/* ✅ Tinyhost-like inbox renderer with inline detail row per mail */
+/* ✅ render inbox: SUBJECT + ACTIONS in SAME LINE */
 function renderInboxTable(mails){
   const rows = mails.map((m, i)=>{
     const id = (m.id||m.email_id||m._id||"");
     const key = `k${i}`;
-    const sender = m.from || m.sender || m.mail_from || "unknown";
     const subject = m.subject || "No subject";
-    const date = m.date || m.created_at || m.time || "";
 
     return `
       <tr id="row-${key}">
-        <td class="senderCol" data-label="Sender">${escapeHtml(sender)}</td>
-        <td class="subjectCol" data-label="Subject"><div class="ellipsis">${escapeHtml(subject)}</div></td>
-        <td class="dateCol" data-label="Date">${escapeHtml(date)}</td>
-        <td class="actionCol" data-label="Actions">
-          <div class="actionBtns">
-            <button class="btnMini btnView" onclick="toggleView('${escapeHtml(id)}','${key}')">View</button>
-            <button class="btnMini btnDelete" onclick="deleteMail('${escapeHtml(id)}')">Delete</button>
-          </div>
-        </td>
-      </tr>
-
-      <!-- ✅ inline detail row (hidden by default) -->
-      <tr id="detailRow-${key}" class="detailHidden">
-        <td class="detailCell" colspan="4">
-          <div class="detailBox" id="detailBox-${key}">
-            <div class="detailHeader">
-              <h4 class="detailTitle">Email Detail</h4>
-              <div class="hrBlue"></div>
-              <div class="muted">Loading...</div>
+        <td class="senderCol" data-label="Sender"></td>
+        <td class="subjectCol" data-label="Subject">
+          <div class="subjectLine">
+            <div class="subjectText">
+              <span class="ellipsis">${escapeHtml(subject)}</span>
+            </div>
+            <div class="actionBtnsInline">
+              <button class="btnMini btnView" onclick="toggleView('${escapeHtml(id)}','${key}')">View</button>
+              <button class="btnMini btnDelete" onclick="deleteMail('${escapeHtml(id)}')">Delete</button>
             </div>
           </div>
+        </td>
+        <td class="dateCol" data-label="Date"></td>
+        <td class="actionCol" data-label="Actions"></td>
+      </tr>
+
+      <!-- ✅ detail row: NOTHING shows until View click -->
+      <tr id="detailRow-${key}" class="detailHidden">
+        <td class="detailCell" colspan="4">
+          <div class="detailBox" id="detailBox-${key}"></div>
         </td>
       </tr>
     `;
@@ -481,7 +481,7 @@ function renderInboxTable(mails){
   `;
 }
 
-function closeOpenDetail(){
+function closeOpenDetail(keepRefresh=false){
   if(openKey){
     const prev = document.getElementById(`detailRow-${openKey}`);
     if(prev) prev.classList.add("detailHidden");
@@ -489,14 +489,17 @@ function closeOpenDetail(){
   openKey = null;
   openMailId = null;
 
-  // ✅ View বন্ধ হলে auto refresh আবার চালু
-  startAutoRefresh();
+  if(keepRefresh){
+    // do nothing (caller will start refresh)
+  }else{
+    startAutoRefresh();
+  }
 }
 
 async function toggleView(id, key){
   if(!id) return;
 
-  // ✅ same mail -> close
+  // same mail -> close
   if(openMailId === id){
     closeOpenDetail();
     return;
@@ -508,17 +511,17 @@ async function toggleView(id, key){
     if(prev) prev.classList.add("detailHidden");
   }
 
-  // open this one
   openKey = key;
   openMailId = id;
 
-  // ✅ View খুললেই auto refresh বন্ধ
+  // View open -> stop inbox auto refresh
   stopAutoRefresh();
 
   const row = document.getElementById(`detailRow-${key}`);
   const box = document.getElementById(`detailBox-${key}`);
   if(row) row.classList.remove("detailHidden");
 
+  // ✅ now (and only now) show header/loading
   if(box){
     box.innerHTML = `
       <div class="detailHeader">
@@ -529,9 +532,7 @@ async function toggleView(id, key){
     `;
   }
 
-  // scroll near (not bottom)
   row.scrollIntoView({ behavior:"smooth", block:"nearest" });
-
   await loadMailIntoDetail(id, key);
 }
 
@@ -628,7 +629,7 @@ async function loadInbox(silent=false){
 
     box.innerHTML = renderInboxTable(mails);
 
-    // ✅ keep opened mail after auto refresh
+    // ✅ keep opened mail only if still open (we stop refresh when open anyway)
     if(openMailId){
       const idx = mails.findIndex(m => (m.id||m.email_id||m._id) == openMailId);
       if(idx >= 0){
@@ -638,6 +639,16 @@ async function loadInbox(silent=false){
         const row = document.getElementById(`detailRow-${key}`);
         if(row) row.classList.remove("detailHidden");
 
+        const box2 = document.getElementById(`detailBox-${key}`);
+        if(box2 && !box2.innerHTML.trim()){
+          box2.innerHTML = `
+            <div class="detailHeader">
+              <h4 class="detailTitle">Email Detail</h4>
+              <div class="hrBlue"></div>
+              <div class="muted">Loading...</div>
+            </div>
+          `;
+        }
         loadMailIntoDetail(openMailId, key);
       }else{
         openMailId = null;
@@ -669,8 +680,9 @@ async function deleteMail(id){
       return;
     }
     setStatus("✅ Deleted");
-    closeOpenDetail();
+    closeOpenDetail(true);
     loadInbox(true);
+    startAutoRefresh();
   }catch(e){
     setStatus("❌ Delete failed");
   }
