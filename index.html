@@ -48,8 +48,6 @@ h2{margin:6px 0 14px}
 }
 .btn-primary{background:#2563eb;color:#fff}
 .btn-dark{background:#111827;color:#fff}
-
-/* ✅ Copy সবুজ, Refresh হলুদ */
 .btn-green{background:#16a34a;color:#fff}
 .btn-yellow{background:#facc15;color:#111827}
 
@@ -73,9 +71,7 @@ pre{white-space:pre-wrap;margin:0}
 small{color:#6b7280}
 .hidden{display:none !important;}
 
-/* =========================
-   ✅ Tinyhost-like INBOX TABLE
-   ========================= */
+/* ✅ Tinyhost-like INBOX TABLE */
 .tableWrap{
   margin-top:10px;
   border-radius:12px;
@@ -88,7 +84,7 @@ small{color:#6b7280}
   background:#fff;
 }
 .inboxTable thead th{
-  background:#334155; /* header dark */
+  background:#334155;
   color:#fff;
   font-size:12px;
   letter-spacing:.4px;
@@ -106,10 +102,13 @@ small{color:#6b7280}
   font-size:14px;
 }
 .inboxTable tbody tr:nth-child(even){ background:#f8fafc; }
-.senderCol{width:22%}
-.subjectCol{width:38%}
-.dateCol{width:22%}
-.actionCol{width:18%}
+
+/* ✅ UPDATED: Sender hidden, only Subject + Actions */
+.senderCol{display:none !important;}
+.dateCol{display:none !important;}
+.subjectCol{width:auto;}
+.actionCol{width:1%; white-space:nowrap;}
+
 .ellipsis{
   display:-webkit-box;
   -webkit-line-clamp:2;
@@ -134,6 +133,58 @@ small{color:#6b7280}
 .btnDelete{ background:#ef4444; color:#fff; }
 .btnMini:active{ transform:scale(.99); }
 
+/* ✅ Inline Detail row (accordion style) */
+.detailCell{
+  padding:14px 12px !important;
+  background:#eef2ff;
+}
+.detailBox{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+.detailHeader{
+  padding:14px 14px 10px;
+}
+.detailTitle{
+  font-size:20px;
+  font-weight:900;
+  margin:0;
+  color:#374151;
+}
+.hrBlue{
+  height:3px;
+  background:#2563eb;
+  border-radius:999px;
+  margin:10px 0 12px;
+  opacity:.8;
+}
+.detailGrid{
+  display:grid;
+  grid-template-columns:110px 1fr;
+  gap:10px 12px;
+  padding:0 14px 14px;
+  align-items:start;
+}
+.label{font-weight:900;color:#374151;}
+.value{color:#111827;word-break:break-word;}
+.bodyBox{
+  border-top:1px solid #e5e7eb;
+  background:#fff;
+}
+.bodyFrame{
+  width:100%;
+  height:520px;
+  border:0;
+  display:block;
+  background:#fff;
+}
+.bodyText{padding:12px;}
+.detailHidden{display:none;}
+
+/* mobile responsive for table */
 @media (max-width:560px){
   .inboxTable thead{display:none;}
   .inboxTable, .inboxTable tbody, .inboxTable tr, .inboxTable td{display:block; width:100%;}
@@ -150,55 +201,7 @@ small{color:#6b7280}
     letter-spacing:.3px;
   }
   .actionBtns{flex-direction:row;}
-}
-
-/* =========================
-   ✅ Tinyhost-like MAIL DETAIL
-   ========================= */
-.detailTitle{
-  font-size:22px;
-  font-weight:900;
-  text-align:left;
-  margin:0 0 10px;
-  color:#374151;
-}
-.hrBlue{
-  height:3px;
-  background:#2563eb;
-  border-radius:999px;
-  margin:8px 0 14px;
-  opacity:.75;
-}
-.detailGrid{
-  display:grid;
-  grid-template-columns: 110px 1fr;
-  gap:10px 12px;
-  align-items:start;
-}
-.label{
-  font-weight:900;
-  color:#374151;
-}
-.value{
-  color:#111827;
-  word-break:break-word;
-}
-.bodyBox{
-  border:1px solid #e5e7eb;
-  border-radius:12px;
-  overflow:hidden;
-  background:#fff;
-  margin-top:10px;
-}
-.bodyFrame{
-  width:100%;
-  height:520px;
-  border:0;
-  display:block;
-  background:#fff;
-}
-.bodyText{
-  padding:12px;
+  .detailCell{padding:10px 0 !important; background:transparent;}
 }
 </style>
 </head>
@@ -212,6 +215,7 @@ small{color:#6b7280}
 
   <input id="nameOrEmail" class="input" placeholder="tamim or tamim@domain.com" />
 
+  <!-- domain area (auto hide/show) -->
   <div id="domainArea">
     <select id="domainSelect" class="input"></select>
     <div class="muted" id="domainStatus">Loading domains...</div>
@@ -224,7 +228,7 @@ small{color:#6b7280}
 
   <div class="row" style="margin-top:8px">
     <button class="btn btn-green" onclick="copyEmail()">📋 Copy Mail</button>
-    <button class="btn btn-yellow" onclick="loadInbox()">🔄 Refresh Inbox</button>
+    <button class="btn btn-yellow" onclick="resetViewsAndResumeRefresh(); loadInbox();">🔄 Refresh Inbox</button>
   </div>
 
   <div class="pill">
@@ -235,15 +239,9 @@ small{color:#6b7280}
 </div>
 
 <!-- INBOX -->
-<div class="card">
+<div class="card" id="inboxCard">
   <h3 class="center">📥TA Mail Inbox</h3>
   <div id="inbox" class="muted" style="margin-top:10px">No mail yet</div>
-</div>
-
-<!-- MAIL VIEW -->
-<div class="card">
-  <h3 class="center">📨 Mail Code Details</h3>
-  <div id="mail" class="muted center">Select a mail</div>
 </div>
 
 </div>
@@ -253,6 +251,11 @@ const BASE="https://tinyhost.shop";
 let cur={user:null,domain:null};
 let inboxTimer=null;
 
+// track which detail is open
+let openKey = null;
+let openMailId = null; // ✅ keep opened mail id (so auto refresh won't close it)
+
+// ===== utils =====
 function setStatus(t){ document.getElementById("status").innerText=t; }
 
 function escapeHtml(s){
@@ -279,6 +282,7 @@ function normalizeInput(raw){
 function parseInputToEmail(raw){
   raw = normalizeInput(raw);
 
+  // full email (contains @)
   if(raw.includes("@")){
     const parts = raw.split("@");
     if(parts.length !== 2) return null;
@@ -289,6 +293,7 @@ function parseInputToEmail(raw){
     return { user, domain, full: `${user}@${domain}` };
   }
 
+  // only name -> domain from dropdown
   const user = safeUser(raw);
   if(!user) return null;
   const domain = document.getElementById("domainSelect").value;
@@ -299,6 +304,11 @@ function parseInputToEmail(raw){
 function startAutoRefresh(){
   if(inboxTimer) clearInterval(inboxTimer);
   inboxTimer=setInterval(()=>loadInbox(true),5000);
+}
+
+function stopAutoRefresh(){
+  if(inboxTimer) clearInterval(inboxTimer);
+  inboxTimer=null;
 }
 
 function randUser(len=7){
@@ -343,14 +353,23 @@ async function loadDomainsToSelect(){
   }
 }
 
+// ===== auto hide/show domain dropdown =====
 function updateDomainVisibility(){
   const raw = normalizeInput(document.getElementById("nameOrEmail").value);
   const domainArea = document.getElementById("domainArea");
+
+  // শুধু তখনই hide হবে যখন সত্যি সত্যি full email লেখা আছে
   if(raw && raw.includes("@")){
     domainArea.classList.add("hidden");
   }else{
     domainArea.classList.remove("hidden");
   }
+}
+
+// ✅ Refresh Inbox ক্লিক করলে: সব mail view হাইড + auto refresh resume
+function resetViewsAndResumeRefresh(){
+  closeOpenDetail();    // hides view + clears ids
+  startAutoRefresh();   // resume 5s refresh
 }
 
 // ===== actions =====
@@ -368,6 +387,10 @@ async function useCustomOrFull(){
 
   localStorage.setItem("last_mailbox", parsed.full);
 
+  // reset open detail
+  openKey = null;
+  openMailId = null;
+
   setStatus("✅ Email ready. Inbox auto refreshing..");
   await loadInbox();
   startAutoRefresh();
@@ -384,10 +407,15 @@ async function generateRandom(){
     const full = `${user}@${domain}`;
     document.getElementById("email").innerText = full;
 
+    // Random Email ক্লিক করলে উপরের বক্স ফাঁকা থাকবে
     document.getElementById("nameOrEmail").value = "";
     updateDomainVisibility();
 
     localStorage.setItem("last_mailbox", full);
+
+    // reset open detail
+    openKey = null;
+    openMailId = null;
 
     setStatus("✅ Random email ready. Inbox auto refresh....");
     await loadInbox();
@@ -397,23 +425,37 @@ async function generateRandom(){
   }
 }
 
-/* ✅ Tinyhost-like inbox renderer */
+/* ✅ Tinyhost-like inbox renderer with inline detail row per mail */
 function renderInboxTable(mails){
-  const rows = mails.map(m=>{
+  const rows = mails.map((m, i)=>{
     const id = (m.id||m.email_id||m._id||"");
+    const key = `k${i}`;
     const sender = m.from || m.sender || m.mail_from || "unknown";
     const subject = m.subject || "No subject";
     const date = m.date || m.created_at || m.time || "";
 
     return `
-      <tr>
+      <tr id="row-${key}">
         <td class="senderCol" data-label="Sender">${escapeHtml(sender)}</td>
         <td class="subjectCol" data-label="Subject"><div class="ellipsis">${escapeHtml(subject)}</div></td>
         <td class="dateCol" data-label="Date">${escapeHtml(date)}</td>
         <td class="actionCol" data-label="Actions">
           <div class="actionBtns">
-            <button class="btnMini btnView" onclick="openMail('${escapeHtml(id)}')">View</button>
+            <button class="btnMini btnView" onclick="toggleView('${escapeHtml(id)}','${key}')">View</button>
             <button class="btnMini btnDelete" onclick="deleteMail('${escapeHtml(id)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+
+      <!-- ✅ inline detail row (hidden by default) -->
+      <tr id="detailRow-${key}" class="detailHidden">
+        <td class="detailCell" colspan="4">
+          <div class="detailBox" id="detailBox-${key}">
+            <div class="detailHeader">
+              <h4 class="detailTitle">Email Detail</h4>
+              <div class="hrBlue"></div>
+              <div class="muted">Loading...</div>
+            </div>
           </div>
         </td>
       </tr>
@@ -425,9 +467,9 @@ function renderInboxTable(mails){
       <table class="inboxTable">
         <thead>
           <tr>
-            <th>SENDER</th>
+            <th class="senderCol">SENDER</th>
             <th>SUBJECT</th>
-            <th>DATE</th>
+            <th class="dateCol">DATE</th>
             <th>ACTIONS</th>
           </tr>
         </thead>
@@ -437,6 +479,135 @@ function renderInboxTable(mails){
       </table>
     </div>
   `;
+}
+
+function closeOpenDetail(){
+  if(openKey){
+    const prev = document.getElementById(`detailRow-${openKey}`);
+    if(prev) prev.classList.add("detailHidden");
+  }
+  openKey = null;
+  openMailId = null;
+
+  // ✅ View বন্ধ হলে auto refresh আবার চালু
+  startAutoRefresh();
+}
+
+async function toggleView(id, key){
+  if(!id) return;
+
+  // ✅ same mail -> close
+  if(openMailId === id){
+    closeOpenDetail();
+    return;
+  }
+
+  // close previous
+  if(openKey){
+    const prev = document.getElementById(`detailRow-${openKey}`);
+    if(prev) prev.classList.add("detailHidden");
+  }
+
+  // open this one
+  openKey = key;
+  openMailId = id;
+
+  // ✅ View খুললেই auto refresh বন্ধ
+  stopAutoRefresh();
+
+  const row = document.getElementById(`detailRow-${key}`);
+  const box = document.getElementById(`detailBox-${key}`);
+  if(row) row.classList.remove("detailHidden");
+
+  if(box){
+    box.innerHTML = `
+      <div class="detailHeader">
+        <h4 class="detailTitle">Email Detail</h4>
+        <div class="hrBlue"></div>
+        <div class="muted">Loading...</div>
+      </div>
+    `;
+  }
+
+  // scroll near (not bottom)
+  row.scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+  await loadMailIntoDetail(id, key);
+}
+
+async function loadMailIntoDetail(id, key){
+  const box = document.getElementById(`detailBox-${key}`);
+  if(!box) return;
+
+  try{
+    const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`);
+    const d=await r.json();
+    const m=d.data?.email||d.email||d;
+
+    const sender = m.sender || m.from || m.mail_from || "";
+    const subject = m.subject || "";
+    const date = m.date || m.created_at || m.time || "";
+
+    const textBody = m.body || m.text || "";
+    const htmlBody = m.html_body || m.html || "";
+
+    box.innerHTML = `
+      <div class="detailHeader">
+        <h4 class="detailTitle">Email Detail</h4>
+        <div class="hrBlue"></div>
+      </div>
+
+      <div class="detailGrid">
+        <div class="label">Sender:</div>
+        <div class="value">${escapeHtml(sender || "—")}</div>
+
+        <div class="label">Subject:</div>
+        <div class="value">${escapeHtml(subject || "—")}</div>
+
+        <div class="label">Date:</div>
+        <div class="value">${escapeHtml(date || "—")}</div>
+
+        <div class="label">Body:</div>
+        <div class="value"></div>
+      </div>
+
+      <div class="bodyBox" id="bodyBox-${key}">
+        <div class="bodyText muted">(empty)</div>
+      </div>
+    `;
+
+    const bodyBox = document.getElementById(`bodyBox-${key}`);
+
+    if(htmlBody && String(htmlBody).trim()){
+      bodyBox.innerHTML = `
+        <iframe id="mailFrame-${key}" class="bodyFrame"
+          sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      `;
+
+      const frame = document.getElementById(`mailFrame-${key}`);
+
+      const wrapped = `<!doctype html><html><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <base target="_blank">
+        <style>
+          body{font-family:Arial,sans-serif;margin:0;padding:12px}
+          img{max-width:100%;height:auto}
+        </style>
+      </head><body>${htmlBody}</body></html>`;
+
+      frame.srcdoc = wrapped;
+      return;
+    }
+
+    if(textBody && String(textBody).trim()){
+      bodyBox.innerHTML = `<div class="bodyText"><pre>${escapeHtml(textBody)}</pre></div>`;
+      return;
+    }
+
+    bodyBox.innerHTML = `<div class="bodyText muted">(empty)</div>`;
+  }catch(e){
+    box.innerHTML = `<div class="detailHeader"><div class="muted">Mail open failed</div></div>`;
+  }
 }
 
 async function loadInbox(silent=false){
@@ -456,6 +627,24 @@ async function loadInbox(silent=false){
     }
 
     box.innerHTML = renderInboxTable(mails);
+
+    // ✅ keep opened mail after auto refresh
+    if(openMailId){
+      const idx = mails.findIndex(m => (m.id||m.email_id||m._id) == openMailId);
+      if(idx >= 0){
+        const key = `k${idx}`;
+        openKey = key;
+
+        const row = document.getElementById(`detailRow-${key}`);
+        if(row) row.classList.remove("detailHidden");
+
+        loadMailIntoDetail(openMailId, key);
+      }else{
+        openMailId = null;
+        openKey = null;
+      }
+    }
+
     if(!silent) setStatus(`✅ Inbox loaded (${mails.length})`);
   }catch(e){
     document.getElementById("inbox").innerText="Inbox load failed";
@@ -471,13 +660,6 @@ async function deleteMail(id){
 
   try{
     setStatus("Deleting...");
-    // ⚠️ NOTE: Tinyhost-এর delete endpoint আলাদা হতে পারে।
-    // যদি কাজ না করে, আপনি tinyhost-এর “Network/Fetch” থেকে Delete URL দিন—আমি ঠিক করে দেব।
-    //
-    // সম্ভাব্য endpoint (আপনাকে confirm করতে হবে):
-    // const url = `${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`;
-    // অথবা: `${BASE}/api/email/${domain}/${user}/${id}/delete`
-    //
     const url = `${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`;
     const res = await fetch(url, { method: "DELETE" });
 
@@ -487,76 +669,10 @@ async function deleteMail(id){
       return;
     }
     setStatus("✅ Deleted");
+    closeOpenDetail();
     loadInbox(true);
   }catch(e){
     setStatus("❌ Delete failed");
-  }
-}
-
-/* ✅ Tinyhost-like Mail Detail + HTML body render */
-async function openMail(id){
-  document.getElementById("mail").innerHTML = `<div class="muted center">Loading...</div>`;
-  try{
-    const r=await fetch(`${BASE}/api/email/${encodeURIComponent(cur.domain)}/${encodeURIComponent(cur.user)}/${encodeURIComponent(id)}`);
-    const d=await r.json();
-    const m=d.data?.email||d.email||d;
-
-    const sender = m.sender || m.from || m.mail_from || "";
-    const subject = m.subject || "";
-    const date = m.date || m.created_at || m.time || "";
-
-    const textBody = m.body || m.text || "";
-    const htmlBody = m.html_body || m.html || "";
-
-    document.getElementById("mail").innerHTML = `
-      <div class="detailTitle">Email Detail</div>
-      <div class="hrBlue"></div>
-
-      <div class="detailGrid">
-        <div class="label">Sender:</div>
-        <div class="value">${escapeHtml(sender || "—")}</div>
-
-        <div class="label">Subject:</div>
-        <div class="value">${escapeHtml(subject || "—")}</div>
-
-        <div class="label">Date:</div>
-        <div class="value">${escapeHtml(date || "—")}</div>
-
-        <div class="label">Body:</div>
-        <div class="value"></div>
-      </div>
-
-      <div class="bodyBox" id="bodyBox">
-        <div class="bodyText muted">(loading...)</div>
-      </div>
-    `;
-
-    const bodyBox = document.getElementById("bodyBox");
-
-    if(htmlBody && String(htmlBody).trim()){
-      bodyBox.innerHTML = `
-        <iframe id="mailFrame" class="bodyFrame" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
-      `;
-      const frame = document.getElementById("mailFrame");
-
-      const wrapped = `<!doctype html><html><head><meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <base target="_blank">
-        <style>body{font-family:Arial,sans-serif;margin:0;padding:12px} img{max-width:100%;height:auto}</style>
-      </head><body>${htmlBody}</body></html>`;
-
-      frame.srcdoc = wrapped;
-      return;
-    }
-
-    if(textBody && String(textBody).trim()){
-      bodyBox.innerHTML = `<div class="bodyText"><pre>${escapeHtml(textBody)}</pre></div>`;
-      return;
-    }
-
-    bodyBox.innerHTML = `<div class="bodyText muted">(empty)</div>`;
-  }catch(e){
-    document.getElementById("mail").innerHTML = `<div class="muted center">Mail open failed</div>`;
   }
 }
 
@@ -592,13 +708,16 @@ function copyEmail(){
   }
 })();
 
+// ===== init =====
 (async function init(){
   await loadDomainsToSelect();
   updateDomainVisibility();
 })();
 
+// auto hide/show while typing
 document.getElementById("nameOrEmail").addEventListener("input", updateDomainVisibility);
 
+// mobile: back to tab
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden && cur.user) loadInbox(true);
 });
