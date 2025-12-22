@@ -93,7 +93,7 @@ small{color:#6b7280}
   text-align:left;
 }
 .inboxTable tbody td{
-  padding:10px 8px; /* list gap কম */
+  padding:10px 10px;          /* ✅ list gap কম */
   border-top:1px solid #eef2f7;
   vertical-align:middle;
   color:#111827;
@@ -124,18 +124,28 @@ small{color:#6b7280}
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
+/* ✅ View button always fits right */
 .actionBtnsInline{
   flex:0 0 auto;
-  white-space:nowrap;
+  display:flex;
+  justify-content:flex-end;
+  min-width:74px;             /* ✅ fixed space so it won't cut */
 }
 .btnMini{
   border:0;
-  border-radius:12px;
-  padding:8px 10px;     /* ✅ ছোট */
+  border-radius:999px;
+  padding:8px 10px;
   font-weight:900;
   cursor:pointer;
-  font-size:12px;       /* ✅ ছোট */
+  font-size:12px;
   line-height:1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:74px;             /* ✅ keeps button inside */
+  max-width:74px;
+  box-sizing:border-box;
 }
 .btnView{ background:#3b82f6; color:#fff; }
 .btnMini:active{ transform:scale(.99); }
@@ -184,19 +194,21 @@ small{color:#6b7280}
   background:#fff;
 }
 .bodyText{padding:12px;}
-.detailHidden{display:none;}
 
 /* ✅ Mobile fit */
 @media (max-width:560px){
   .inboxTable thead{display:none;}
   .inboxTable, .inboxTable tbody, .inboxTable tr, .inboxTable td{display:block; width:100%;}
   .inboxTable tr{border-top:1px solid #eef2f7; padding:8px;}
-  .inboxTable tbody td{border:0; padding:4px 0;}
+  .inboxTable tbody td{border:0; padding:6px 0;}
   .subjectLine{gap:8px;}
-  .btnMini{ padding:7px 9px; font-size:11px; }
+  .actionBtnsInline{min-width:64px;}
+  .btnMini{min-width:64px; max-width:64px; padding:7px 8px; font-size:11px;}
+  .detailCell{padding:10px 0 !important; background:transparent;}
 }
 @media (max-width:360px){
-  .btnMini{ padding:7px 8px; font-size:10.5px; }
+  .actionBtnsInline{min-width:58px;}
+  .btnMini{min-width:58px; max-width:58px; padding:7px 7px; font-size:10.5px;}
 }
 </style>
 </head>
@@ -308,7 +320,7 @@ function randUser(len=7){
   return s;
 }
 
-/* ✅ Domain fallback (যদি network/CORS এ fail হয় তাও domain দেখাবে) */
+/* ✅ Domain fallback */
 const FALLBACK_DOMAINS = [
   "absipr.com","tmails.net","paharpur.com","mailum.com","fexpost.com",
   "bexpost.com","mailyou.co","tmpbox.net","maildrop.cc","mailor.net",
@@ -316,9 +328,7 @@ const FALLBACK_DOMAINS = [
   "tmpmail.pro","tempmx.com","dropmail.one","inboxspot.net","mailgen.cc"
 ];
 
-// ===== domains =====
 async function getDomains(){
-  // try 1: official endpoint
   const urls = [
     BASE + "/api/random-domains/?limit=200",
     BASE + "/api/random-domains/?limit=50"
@@ -334,8 +344,6 @@ async function getDomains(){
       if(uniq.length) return uniq;
     }catch(e){}
   }
-
-  // fallback
   return Array.from(new Set(FALLBACK_DOMAINS));
 }
 
@@ -384,7 +392,6 @@ function resetViewsAndResumeRefresh(){
   startAutoRefresh();
 }
 
-// ===== actions =====
 async function useCustomOrFull(){
   const raw = document.getElementById("nameOrEmail").value;
   const parsed = parseInputToEmail(raw);
@@ -433,7 +440,7 @@ async function generateRandom(){
   }
 }
 
-/* ✅ render inbox: SUBJECT + VIEW in same line */
+/* ✅ NO empty detail rows anymore */
 function renderInboxTable(mails){
   const rows = mails.map((m, i)=>{
     const id = (m.id||m.email_id||m._id||"");
@@ -454,12 +461,6 @@ function renderInboxTable(mails){
           </div>
         </td>
         <td class="dateCol"></td>
-      </tr>
-
-      <tr id="detailRow-${key}" class="detailHidden">
-        <td class="detailCell" colspan="3">
-          <div class="detailBox" id="detailBox-${key}"></div>
-        </td>
       </tr>
     `;
   }).join("");
@@ -484,13 +485,39 @@ function renderInboxTable(mails){
 
 function closeOpenDetail(keepRefresh=false){
   if(openKey){
-    const prev = document.getElementById(`detailRow-${openKey}`);
-    if(prev) prev.classList.add("detailHidden");
+    const dr = document.getElementById(`detailRow-${openKey}`);
+    if(dr) dr.remove();            // ✅ remove inserted detail row
   }
   openKey = null;
   openMailId = null;
 
   if(!keepRefresh) startAutoRefresh();
+}
+
+function ensureDetailRow(key){
+  let dr = document.getElementById(`detailRow-${key}`);
+  if(dr) return dr;
+
+  const row = document.getElementById(`row-${key}`);
+  if(!row) return null;
+
+  dr = document.createElement("tr");
+  dr.id = `detailRow-${key}`;
+
+  dr.innerHTML = `
+    <td class="detailCell" colspan="3">
+      <div class="detailBox" id="detailBox-${key}">
+        <div class="detailHeader">
+          <h4 class="detailTitle">Email Detail</h4>
+          <div class="hrBlue"></div>
+          <div class="muted">Loading...</div>
+        </div>
+      </div>
+    </td>
+  `;
+
+  row.insertAdjacentElement("afterend", dr);
+  return dr;
 }
 
 async function toggleView(id, key){
@@ -501,32 +528,21 @@ async function toggleView(id, key){
     return;
   }
 
-  if(openKey){
+  // close previous detail
+  if(openKey && openKey !== key){
     const prev = document.getElementById(`detailRow-${openKey}`);
-    if(prev) prev.classList.add("detailHidden");
+    if(prev) prev.remove();
   }
 
   openKey = key;
   openMailId = id;
 
-  // view open থাকলে inbox auto refresh বন্ধ থাকবে
+  // view open -> stop auto refresh
   stopAutoRefresh();
 
-  const row = document.getElementById(`detailRow-${key}`);
-  const box = document.getElementById(`detailBox-${key}`);
-  if(row) row.classList.remove("detailHidden");
+  const dr = ensureDetailRow(key);
+  if(dr) dr.scrollIntoView({ behavior:"smooth", block:"nearest" });
 
-  if(box){
-    box.innerHTML = `
-      <div class="detailHeader">
-        <h4 class="detailTitle">Email Detail</h4>
-        <div class="hrBlue"></div>
-        <div class="muted">Loading...</div>
-      </div>
-    `;
-  }
-
-  row.scrollIntoView({ behavior:"smooth", block:"nearest" });
   await loadMailIntoDetail(id, key);
 }
 
