@@ -525,7 +525,7 @@ function parseInputToEmail(raw){
 
 function startAutoRefresh(){
   if(inboxTimer) clearInterval(inboxTimer);
-  inboxTimer=setInterval(()=>loadInbox(true),5000);
+  inboxTimer=setInterval(()=>loadInbox(true),1000);
 }
 function stopAutoRefresh(){
   if(inboxTimer) clearInterval(inboxTimer);
@@ -547,8 +547,8 @@ const FALLBACK_DOMAINS = [
 
 async function getDomains(){
   const urls = [
-    BASE + "/api/random-domains/?limit=200",
-    BASE + "/api/random-domains/?limit=50"
+    BASE + "/api/random-domains/?limit=10",
+    BASE + "/api/random-domains/?limit=5"
   ];
 
   for(const url of urls){
